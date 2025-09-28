@@ -26,8 +26,10 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your_super_secret_key")
 MONGO_URI = os.getenv("MONGO_URI")
 
 # FatSecret API Configuration
-FATSECRET_CONSUMER_KEY = "2b11373a2a91447c8641b776788d2080"
-FATSECRET_CONSUMER_SECRET = "87ae6c68b73d4169a0a54a35b2b2c141"
+import os
+
+FATSECRET_CONSUMER_KEY = os.getenv("FATSECRET_CONSUMER_KEY", "2b11373a2a91447c8641b776788d2080")
+FATSECRET_CONSUMER_SECRET = os.getenv("FATSECRET_CONSUMER_SECRET", "87ae6c68b73d4169a0a54a35b2b2c141")
 
 # Use certifi to fix SSL handshake issue
 client = MongoClient(MONGO_URI, tls=True, tlsCAFile=certifi.where())
