@@ -2,42 +2,97 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Nutrition Advisor</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nutrition Advisor - Your Personal Health Companion</title>
+  <link rel="stylesheet" href="home-style.css" />
 </head>
 <body>
-  <div class="container">
-    <!-- Registration Section -->
-    <div class="form-section">
-      <h2>Register</h2>
-      <form id="registerForm" class="form">
-        <input type="text" name="name" placeholder="Full Name" required />
-        <input type="email" name="email" placeholder="Email Address" required />
-        <input type="password" name="password" placeholder="Password" required />
-        <button type="submit" class="btn btn-primary">Create Account</button>
-      </form>
-      <p id="message" class="message"></p>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="logo">
+        <h2>🥗 Nutrition Advisor</h2>
+      </div>
+      <div class="nav-buttons">
+        <button onclick="showLogin()" class="btn btn-outline">Login</button>
+        <button onclick="showRegister()" class="btn btn-primary">Get Started</button>
+      </div>
     </div>
+  </nav>
 
-    <!-- Login Section -->
-    <div class="form-section">
-      <h2>Login</h2>
-      <form id="loginForm" class="form">
-        <input type="email" name="email" placeholder="Email Address" required />
-        <input type="password" name="password" placeholder="Password" required />
-        <button type="submit" class="btn btn-primary">Sign In</button>
-      </form>
-      <p id="loginMessage" class="message"></p>
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Take Control of Your Nutrition Journey</h1>
+      <p>Track your meals, monitor calories, and get personalized nutrition advice to achieve your health goals.</p>
+      <button onclick="showRegister()" class="btn btn-hero">Start Your Journey</button>
     </div>
+    <div class="hero-image">
+      <div class="placeholder-image">🍎📊💪</div>
+    </div>
+  </section>
 
-    <!-- Users Section -->
-    <div class="users-section">
-      <h2>All Users</h2>
-      <button id="loadUsersBtn" class="btn btn-secondary">Load Users</button>
-      <div id="usersList" class="users-list"></div>
+  <!-- Features Section -->
+  <section class="features">
+    <div class="container">
+      <h2>Why Choose Nutrition Advisor?</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📝</div>
+          <h3>Food Logging</h3>
+          <p>Easily track your daily meals and snacks with our intuitive food diary.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Nutrition Analysis</h3>
+          <p>Get detailed insights about calories, proteins, carbs, and nutrients.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>Goal Setting</h3>
+          <p>Set personalized nutrition goals and track your progress over time.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💡</div>
+          <h3>Smart Recommendations</h3>
+          <p>Receive AI-powered meal suggestions based on your preferences and goals.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Login/Register Modal -->
+  <div id="authModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      
+      <!-- Register Form -->
+      <div id="registerSection" class="auth-section">
+        <h2>Create Your Account</h2>
+        <form id="registerForm" class="auth-form">
+          <input type="text" name="name" placeholder="Full Name" required />
+          <input type="email" name="email" placeholder="Email Address" required />
+          <input type="password" name="password" placeholder="Password" required />
+          <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+        </form>
+        <p id="registerMessage" class="message"></p>
+        <p class="switch-auth">Already have an account? <a href="#" onclick="showLogin()">Login here</a></p>
+      </div>
+
+      <!-- Login Form -->
+      <div id="loginSection" class="auth-section" style="display: none;">
+        <h2>Welcome Back</h2>
+        <form id="loginForm" class="auth-form">
+          <input type="email" name="email" placeholder="Email Address" required />
+          <input type="password" name="password" placeholder="Password" required />
+          <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+        </form>
+        <p id="loginMessage" class="message"></p>
+        <p class="switch-auth">Don't have an account? <a href="#" onclick="showRegister()">Register here</a></p>
+      </div>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="home-script.js"></script>
 </body>
 </html>
