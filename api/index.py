@@ -71,7 +71,7 @@ def home():
     return jsonify({
         "message": "Nutrition Advisor API is running!",
         "status": "healthy",
-        "database": "connected" if users_collection else "not connected",
+        "database": "connected" if users_collection is not None else "not connected",
         "environment": {
             "SECRET_KEY": bool(SECRET_KEY),
             "MONGO_URI": bool(MONGO_URI),
