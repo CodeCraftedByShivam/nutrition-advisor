@@ -33,7 +33,7 @@ registerForm.addEventListener('submit', async (e) => {
   const formData = new FormData(registerForm);
   const data = Object.fromEntries(formData.entries());
 
-  const response = await fetch('/api/register', {
+  const response = await fetch('https://nutrition-advisor-a93q.onrender.com/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -61,7 +61,7 @@ loginForm.addEventListener('submit', async (e) => {
   const formData = new FormData(loginForm);
   const data = Object.fromEntries(formData.entries());
 
-  const response = await fetch('/api/login', {
+  const response = await fetch('https://nutrition-advisor-a93q.onrender.com/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)

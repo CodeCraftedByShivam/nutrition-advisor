@@ -26,7 +26,7 @@ async function loadUserInfo() {
 // Load meal statistics from backend
 async function loadMealStats() {
   try {
-    const response = await fetch('/api/meals/stats', {
+    const response = await fetch('https://nutrition-advisor-a93q.onrender.com/meals/stats', {
       headers: {
         'Authorization': 'Bearer ' + token
       }
@@ -48,7 +48,7 @@ async function loadMealStats() {
 async function loadTodaysMeals() {
   try {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const response = await fetch(`/api/meals?date=${today}`, {
+    const response = await fetch(`https://nutrition-advisor-a93q.onrender.com/meals?date=${today}`, {
       headers: {
         'Authorization': 'Bearer ' + token
       }
@@ -95,7 +95,7 @@ async function deleteMeal(mealId) {
   if (!confirm('Are you sure you want to delete this meal?')) return;
   
   try {
-    const response = await fetch(`/api/meal/delete/${mealId}`, {
+    const response = await fetch(`https://nutrition-advisor-a93q.onrender.com/meal/delete/${mealId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': 'Bearer ' + token
@@ -139,7 +139,7 @@ function setupFoodSearch() {
 
 async function searchFood(query) {
   try {
-    const response = await fetch(`/api/food/search?q=${encodeURIComponent(query)}`, {
+    const response = await fetch(`https://nutrition-advisor-a93q.onrender.com/food/search?q=${encodeURIComponent(query)}`, {
       headers: {
         'Authorization': 'Bearer ' + token
       }
@@ -189,7 +189,7 @@ async function selectFood(foodId, foodName) {
   // Load nutrition details
   try {
     console.log('Fetching food details for ID:', foodId);
-    const response = await fetch(`/api/food/details/${foodId}`, {
+    const response = await fetch(`https://nutrition-advisor-a93q.onrender.com/food/details/${foodId}`, {
       headers: {
         'Authorization': 'Bearer ' + token
       }
@@ -311,7 +311,7 @@ function switchTab(tabName) {
 // Load existing user profile - NEW
 async function loadUserProfile() {
   try {
-    const response = await fetch('/api/profile', {
+    const response = await fetch('https://nutrition-advisor-a93q.onrender.com/profile', {
       headers: {
         'Authorization': 'Bearer ' + token
       }
@@ -468,7 +468,7 @@ async function saveProfile() {
   }
   
   try {
-    const response = await fetch('/api/profile', {
+    const response = await fetch('https://nutrition-advisor-a93q.onrender.com/profile', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -511,10 +511,10 @@ function updateDashboardGoals(profile) {
 async function loadMealStatsWithGoals() {
   try {
     const [statsResponse, profileResponse] = await Promise.all([
-      fetch('/api/meals/stats', {
+      fetch('https://nutrition-advisor-a93q.onrender.com/meals/stats', {
         headers: { 'Authorization': 'Bearer ' + token }
       }),
-      fetch('/api/profile', {
+      fetch('https://nutrition-advisor-a93q.onrender.com/profile', {
         headers: { 'Authorization': 'Bearer ' + token }
       })
     ]);
@@ -597,7 +597,7 @@ document.getElementById('addMealForm').addEventListener('submit', async (e) => {
   console.log('Final meal data being sent:', mealData);
   
   try {
-    const response = await fetch('/api/meal/add', {
+    const response = await fetch('https://nutrition-advisor-a93q.onrender.com/meal/add', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -647,7 +647,7 @@ async function loadAnalysis() {
   const period = document.getElementById('periodFilter').value;
   
   try {
-    const response = await fetch(`/api/meals/analysis?period=${period}`, {
+    const response = await fetch(`https://nutrition-advisor-a93q.onrender.com/meals/analysis?period=${period}`, {
       headers: {
         'Authorization': 'Bearer ' + token
       }
