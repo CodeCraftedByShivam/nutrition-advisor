@@ -13,8 +13,9 @@ from requests_oauthlib import OAuth1
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)
-
+CORS(app, origins=["https://nutrition-advisor-frontend.onrender.com", "https://nutrition-advisor-frontend-*.onrender.com"], 
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 # Environment variables
 SECRET_KEY = os.getenv("SECRET_KEY", "your_super_secret_key")
 MONGO_URI = os.getenv("MONGO_URI")
