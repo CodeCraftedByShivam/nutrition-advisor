@@ -13,9 +13,14 @@ from requests_oauthlib import OAuth1
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, origins=["https://nutrition-advisor-frontend.onrender.com", "https://nutrition-advisor-frontend-*.onrender.com"], 
-     allow_headers=["Content-Type", "Authorization"],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+
+# FIXED CORS CONFIGURATION - Allow all origins temporarily
+CORS(app, 
+     origins=["*"],  # Allow all origins for now
+     allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     supports_credentials=False)
+
 # Environment variables
 SECRET_KEY = os.getenv("SECRET_KEY", "your_super_secret_key")
 MONGO_URI = os.getenv("MONGO_URI")
@@ -38,11 +43,20 @@ except Exception as e:
     users_collection = None
     print(f"MongoDB connection error: {e}")
 
+# Error handlers for JSON responses
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({"error": "Internal server error", "details": str(error)}), 500
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"error": "Endpoint not found"}), 404
+
 # JWT Decorator
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not users_collection:
+        if users_collection is None:
             return jsonify({"error": "Database not available"}), 500
             
         token = None
@@ -85,13 +99,20 @@ def ping():
     return jsonify({"message": "pong", "timestamp": datetime.now(timezone.utc).isoformat()})
 
 # Auth Routes
-@app.route("/register", methods=["POST"])
+@app.route("/register", methods=["POST", "OPTIONS"])
 def register():
-    if not users_collection:
+    # Handle preflight OPTIONS request
+    if request.method == "OPTIONS":
+        return jsonify({"message": "OK"}), 200
+        
+    if users_collection is None:
         return jsonify({"error": "Database not available"}), 500
         
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data received"}), 400
+            
         required_fields = ["name", "email", "password"]
         for field in required_fields:
             if field not in data:
@@ -115,13 +136,20 @@ def register():
     except Exception as e:
         return jsonify({"error": "Registration failed", "details": str(e)}), 500
 
-@app.route("/login", methods=["POST"])
+@app.route("/login", methods=["POST", "OPTIONS"])
 def login():
-    if not users_collection:
+    # Handle preflight OPTIONS request
+    if request.method == "OPTIONS":
+        return jsonify({"message": "OK"}), 200
+        
+    if users_collection is None:
         return jsonify({"error": "Database not available"}), 500
         
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data received"}), 400
+            
         if "email" not in data or "password" not in data:
             return jsonify({"error": "Email and password required"}), 400
 
@@ -240,7 +268,7 @@ def delete_user(id, current_user):
 @app.route("/meal/add", methods=["POST"])
 @token_required
 def add_meal(current_user):
-    if not db:
+    if db is None:
         return jsonify({"error": "Database not available"}), 500
         
     try:
@@ -277,7 +305,7 @@ def add_meal(current_user):
 @app.route("/meals", methods=["GET"])
 @token_required
 def get_user_meals(current_user):
-    if not db:
+    if db is None:
         return jsonify({"error": "Database not available"}), 500
         
     try:
@@ -305,7 +333,7 @@ def get_user_meals(current_user):
 @app.route("/meal/delete/<meal_id>", methods=["DELETE"])
 @token_required
 def delete_meal(meal_id, current_user):
-    if not db:
+    if db is None:
         return jsonify({"error": "Database not available"}), 500
         
     try:
@@ -326,7 +354,7 @@ def delete_meal(meal_id, current_user):
 @app.route("/meals/stats", methods=["GET"])
 @token_required
 def get_meal_stats(current_user):
-    if not db:
+    if db is None:
         return jsonify({"error": "Database not available"}), 500
         
     try:
@@ -448,7 +476,7 @@ def get_food_details(food_id, current_user):
 @app.route("/meals/analysis", methods=["GET"])
 @token_required
 def get_nutrition_analysis(current_user):
-    if not db:
+    if db is None:
         return jsonify({"error": "Database not available"}), 500
         
     try:
@@ -534,7 +562,7 @@ def get_nutrition_analysis(current_user):
 @app.route("/profile", methods=["GET"])
 @token_required
 def get_profile(current_user):
-    if not db:
+    if db is None:
         return jsonify({"error": "Database not available"}), 500
         
     try:
@@ -553,7 +581,7 @@ def get_profile(current_user):
 @app.route("/profile", methods=["POST"])
 @token_required
 def save_profile(current_user):
-    if not db:
+    if db is None:
         return jsonify({"error": "Database not available"}), 500
         
     try:
