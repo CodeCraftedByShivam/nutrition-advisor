@@ -588,7 +588,7 @@ function logout() {
     localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_PREFERENCES);
   }
   
-  window.location.href = 'home.html';
+  window.location.href = 'index.html';
 }
 
 // Enhanced meal form submission with proper nutrition handling
