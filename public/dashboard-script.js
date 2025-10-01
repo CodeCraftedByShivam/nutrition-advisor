@@ -1,5 +1,10 @@
+// Enhanced Configuration Support for Dashboard
+const API_URL = typeof CONFIG !== 'undefined' ? CONFIG.API_BASE_URL : 'https://nutrition-advisor-a93q.onrender.com';
+const TOKEN_KEY = typeof CONFIG !== 'undefined' ? CONFIG.STORAGE_KEYS.JWT_TOKEN : 'token';
+const DEBUG_MODE = typeof CONFIG !== 'undefined' ? CONFIG.FEATURES.DEBUG_MODE : false;
+
 // Check if user is logged in
-const token = localStorage.getItem('token');
+const token = localStorage.getItem(TOKEN_KEY);
 if (!token) {
   window.location.href = 'home.html';
 }
@@ -10,34 +15,90 @@ let selectedFood = null;
 let macrosChart = null;
 let caloriesChart = null;
 
+// Enhanced API call helper function
+async function makeApiCall(endpoint, method = 'GET', data = null, showLoading = false) {
+  const loadingElement = showLoading ? document.querySelector('.loading') : null;
+  
+  if (loadingElement) {
+    loadingElement.style.display = 'block';
+  }
+
+  try {
+    const options = {
+      method: method,
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      }
+    };
+
+    if (data) {
+      options.body = JSON.stringify(data);
+    }
+
+    const response = await fetch(`${API_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`, options);
+    const result = await response.json();
+
+    if (loadingElement) {
+      loadingElement.style.display = 'none';
+    }
+
+    if (DEBUG_MODE) {
+      console.log(`API Call ${method} ${endpoint}:`, { response: response.status, result });
+    }
+
+    return { response, result };
+  } catch (error) {
+    if (loadingElement) {
+      loadingElement.style.display = 'none';
+    }
+
+    if (DEBUG_MODE) {
+      console.error(`API Error ${method} ${endpoint}:`, error);
+    }
+
+    throw error;
+  }
+}
+
 // Initialize dashboard - UPDATED to use enhanced stats loading
 document.addEventListener('DOMContentLoaded', () => {
   loadUserInfo();
   loadMealStatsWithGoals(); // CHANGED: Now uses personalized goals
   loadTodaysMeals();
   setupFoodSearch();
+  
+  if (DEBUG_MODE) {
+    console.log('🏠 Dashboard loaded in', typeof CONFIG !== 'undefined' ? CONFIG.ENVIRONMENT : 'production', 'mode');
+    console.log('🔗 API endpoint:', API_URL);
+  }
 });
 
 // Load user info
 async function loadUserInfo() {
-  document.getElementById('welcomeText').textContent = 'Welcome back!';
+  try {
+    const userPrefs = localStorage.getItem(typeof CONFIG !== 'undefined' ? CONFIG.STORAGE_KEYS.USER_PREFERENCES : 'user_prefs');
+    if (userPrefs) {
+      const user = JSON.parse(userPrefs);
+      document.getElementById('welcomeText').textContent = `Welcome back, ${user.name}!`;
+    } else {
+      document.getElementById('welcomeText').textContent = 'Welcome back!';
+    }
+  } catch (error) {
+    document.getElementById('welcomeText').textContent = 'Welcome back!';
+  }
 }
 
 // Load meal statistics from backend
 async function loadMealStats() {
   try {
-    const response = await fetch('https://nutrition-advisor-a93q.onrender.com/meals/stats', {
-      headers: {
-        'Authorization': 'Bearer ' + token
-      }
-    });
+    const { response, result } = await makeApiCall('/meals/stats');
     
     if (response.ok) {
-      const stats = await response.json();
-      document.getElementById('caloriesCount').textContent = stats.total_calories;
-      document.getElementById('mealsCount').textContent = stats.meals_count;
-      document.getElementById('goalProgress').textContent = stats.goal_progress + '%';
-      document.getElementById('streakCount').textContent = stats.streak;
+      document.getElementById('caloriesCount').textContent = result.total_calories;
+      document.getElementById('mealsCount').textContent = result.meals_count;
+      document.getElementById('goalProgress').textContent = result.goal_progress + '%';
+      document.getElementById('streakCount').textContent = result.streak;
     }
   } catch (error) {
     console.error('Error loading stats:', error);
@@ -48,15 +109,10 @@ async function loadMealStats() {
 async function loadTodaysMeals() {
   try {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const response = await fetch(`https://nutrition-advisor-a93q.onrender.com/meals?date=${today}`, {
-      headers: {
-        'Authorization': 'Bearer ' + token
-      }
-    });
+    const { response, result } = await makeApiCall(`/meals?date=${today}`);
     
     if (response.ok) {
-      const meals = await response.json();
-      displayMeals(meals);
+      displayMeals(result);
     }
   } catch (error) {
     console.error('Error loading meals:', error);
@@ -95,12 +151,7 @@ async function deleteMeal(mealId) {
   if (!confirm('Are you sure you want to delete this meal?')) return;
   
   try {
-    const response = await fetch(`https://nutrition-advisor-a93q.onrender.com/meal/delete/${mealId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': 'Bearer ' + token
-      }
-    });
+    const { response } = await makeApiCall(`/meal/delete/${mealId}`, 'DELETE');
     
     if (response.ok) {
       // Refresh the display
@@ -139,15 +190,10 @@ function setupFoodSearch() {
 
 async function searchFood(query) {
   try {
-    const response = await fetch(`https://nutrition-advisor-a93q.onrender.com/food/search?q=${encodeURIComponent(query)}`, {
-      headers: {
-        'Authorization': 'Bearer ' + token
-      }
-    });
+    const { response, result } = await makeApiCall(`/food/search?q=${encodeURIComponent(query)}`);
     
     if (response.ok) {
-      const data = await response.json();
-      displayFoodSuggestions(data.foods || []);
+      displayFoodSuggestions(result.foods || []);
     }
   } catch (error) {
     console.error('Error searching food:', error);
@@ -172,7 +218,9 @@ function displayFoodSuggestions(foods) {
 
 // Enhanced selectFood function with debug logs
 async function selectFood(foodId, foodName) {
-  console.log('Selected food:', foodId, foodName);
+  if (DEBUG_MODE) {
+    console.log('Selected food:', foodId, foodName);
+  }
   
   document.getElementById('selectedFoodId').value = foodId;
   document.getElementById('selectedFoodName').value = foodName;
@@ -188,18 +236,18 @@ async function selectFood(foodId, foodName) {
   
   // Load nutrition details
   try {
-    console.log('Fetching food details for ID:', foodId);
-    const response = await fetch(`https://nutrition-advisor-a93q.onrender.com/food/details/${foodId}`, {
-      headers: {
-        'Authorization': 'Bearer ' + token
-      }
-    });
+    if (DEBUG_MODE) {
+      console.log('Fetching food details for ID:', foodId);
+    }
+    
+    const { response, result } = await makeApiCall(`/food/details/${foodId}`);
     
     if (response.ok) {
-      const data = await response.json();
-      console.log('Food details received:', data);
-      displayNutritionPreview(data);
-      selectedFood = data;
+      if (DEBUG_MODE) {
+        console.log('Food details received:', result);
+      }
+      displayNutritionPreview(result);
+      selectedFood = result;
     } else {
       console.error('Error fetching food details:', response.status);
       document.getElementById('previewCalories').textContent = 'Error';
@@ -212,7 +260,9 @@ async function selectFood(foodId, foodName) {
 
 // Enhanced displayNutritionPreview function
 function displayNutritionPreview(foodData) {
-  console.log('Displaying nutrition for:', foodData);
+  if (DEBUG_MODE) {
+    console.log('Displaying nutrition for:', foodData);
+  }
   
   if (!foodData.food || !foodData.food.servings) {
     console.error('Invalid food data structure:', foodData);
@@ -226,7 +276,9 @@ function displayNutritionPreview(foodData) {
     serving = foodData.food.servings.serving;
   }
   
-  console.log('Using serving data:', serving);
+  if (DEBUG_MODE) {
+    console.log('Using serving data:', serving);
+  }
   
   document.getElementById('previewCalories').textContent = serving.calories || '0';
   document.getElementById('previewProtein').textContent = serving.protein || '0';
@@ -311,23 +363,20 @@ function switchTab(tabName) {
 // Load existing user profile - NEW
 async function loadUserProfile() {
   try {
-    const response = await fetch('https://nutrition-advisor-a93q.onrender.com/profile', {
-      headers: {
-        'Authorization': 'Bearer ' + token
-      }
-    });
+    const { response, result } = await makeApiCall('/profile');
     
     if (response.ok) {
-      const profile = await response.json();
-      populateProfileForm(profile);
+      populateProfileForm(result);
       
       // Show calculated goals if they exist
-      if (profile.dailyCalories) {
-        displayCalculatedGoals(profile);
+      if (result.dailyCalories) {
+        displayCalculatedGoals(result);
       }
     } else if (response.status === 404) {
       // Profile doesn't exist yet, that's okay
-      console.log('No existing profile found');
+      if (DEBUG_MODE) {
+        console.log('No existing profile found');
+      }
     }
   } catch (error) {
     console.error('Error loading profile:', error);
@@ -468,16 +517,7 @@ async function saveProfile() {
   }
   
   try {
-    const response = await fetch('https://nutrition-advisor-a93q.onrender.com/profile', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token
-      },
-      body: JSON.stringify(profileData)
-    });
-    
-    const result = await response.json();
+    const { response, result } = await makeApiCall('/profile', 'POST', profileData);
     
     if (response.ok) {
       document.getElementById('profileMessage').className = 'message success';
@@ -510,22 +550,18 @@ function updateDashboardGoals(profile) {
 // Enhanced meal stats loading with personalized goals - NEW
 async function loadMealStatsWithGoals() {
   try {
-    const [statsResponse, profileResponse] = await Promise.all([
-      fetch('https://nutrition-advisor-a93q.onrender.com/meals/stats', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      }),
-      fetch('https://nutrition-advisor-a93q.onrender.com/profile', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      })
+    const [statsResult, profileResult] = await Promise.all([
+      makeApiCall('/meals/stats').catch(() => ({ response: { ok: false } })),
+      makeApiCall('/profile').catch(() => ({ response: { ok: false } }))
     ]);
     
-    if (statsResponse.ok) {
-      const stats = await statsResponse.json();
+    if (statsResult.response && statsResult.response.ok) {
+      const stats = statsResult.result;
       let goalProgress = stats.goal_progress;
       
       // Use personalized goals if profile exists
-      if (profileResponse.ok) {
-        const profile = await profileResponse.json();
+      if (profileResult.response && profileResult.response.ok) {
+        const profile = profileResult.result;
         if (profile.dailyCalories) {
           goalProgress = Math.min(Math.round((stats.total_calories / profile.dailyCalories) * 100), 100);
         }
@@ -545,7 +581,13 @@ async function loadMealStatsWithGoals() {
 
 // Logout function
 function logout() {
-  localStorage.removeItem('token');
+  localStorage.removeItem(TOKEN_KEY);
+  
+  // Also remove user preferences
+  if (typeof CONFIG !== 'undefined') {
+    localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_PREFERENCES);
+  }
+  
   window.location.href = 'home.html';
 }
 
@@ -563,8 +605,10 @@ document.getElementById('addMealForm').addEventListener('submit', async (e) => {
   const selectedFoodName = document.getElementById('selectedFoodName').value;
   const selectedFoodId = document.getElementById('selectedFoodId').value;
   
-  console.log('Form submission - Selected food:', selectedFoodName, selectedFoodId);
-  console.log('Selected food object:', selectedFood);
+  if (DEBUG_MODE) {
+    console.log('Form submission - Selected food:', selectedFoodName, selectedFoodId);
+    console.log('Selected food object:', selectedFood);
+  }
   
   if (selectedFoodName && selectedFoodId) {
     // Use selected food from dropdown
@@ -580,7 +624,9 @@ document.getElementById('addMealForm').addEventListener('submit', async (e) => {
         serving = selectedFood.food.servings.serving;
       }
       
-      console.log('Adding nutrition data from serving:', serving);
+      if (DEBUG_MODE) {
+        console.log('Adding nutrition data from serving:', serving);
+      }
       
       mealData.calories = parseInt(serving.calories) || 0;
       mealData.protein = parseFloat(serving.protein) || 0;
@@ -591,23 +637,21 @@ document.getElementById('addMealForm').addEventListener('submit', async (e) => {
     // Fallback to manual input
     mealData.foodName = document.getElementById('foodSearch').value;
     mealData.calories = 0;
-    console.log('Using manual input:', mealData.foodName);
+    if (DEBUG_MODE) {
+      console.log('Using manual input:', mealData.foodName);
+    }
   }
   
-  console.log('Final meal data being sent:', mealData);
+  if (DEBUG_MODE) {
+    console.log('Final meal data being sent:', mealData);
+  }
   
   try {
-    const response = await fetch('https://nutrition-advisor-a93q.onrender.com/meal/add', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token
-      },
-      body: JSON.stringify(mealData)
-    });
+    const { response, result } = await makeApiCall('/meal/add', 'POST', mealData);
     
-    const result = await response.json();
-    console.log('Server response:', result);
+    if (DEBUG_MODE) {
+      console.log('Server response:', result);
+    }
     
     if (response.ok) {
       // Show success message
@@ -647,15 +691,10 @@ async function loadAnalysis() {
   const period = document.getElementById('periodFilter').value;
   
   try {
-    const response = await fetch(`https://nutrition-advisor-a93q.onrender.com/meals/analysis?period=${period}`, {
-      headers: {
-        'Authorization': 'Bearer ' + token
-      }
-    });
+    const { response, result } = await makeApiCall(`/meals/analysis?period=${period}`);
     
     if (response.ok) {
-      const data = await response.json();
-      displayAnalysisData(data);
+      displayAnalysisData(result);
     } else {
       console.error('Error loading analysis data');
     }
