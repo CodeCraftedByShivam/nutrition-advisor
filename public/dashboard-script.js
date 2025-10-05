@@ -118,6 +118,213 @@ async function loadTodaysMeals() {
     console.error('Error loading meals:', error);
   }
 }
+// Enhanced makeApiCall with auto-logout on 401
+async function makeApiCall(endpoint, method = 'GET', data = null, showLoading = false) {
+  const loadingElement = showLoading ? document.querySelector('.loading') : null;
+  
+  if (loadingElement) {
+    loadingElement.style.display = 'block';
+  }
+
+  try {
+    const options = {
+      method: method,
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      }
+    };
+
+    if (data) {
+      options.body = JSON.stringify(data);
+    }
+
+    const response = await fetch(`${API_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`, options);
+    
+    // Handle 401 - Token expired
+    if (response.status === 401) {
+      alert('⚠️ Your session has expired. Please login again.');
+      localStorage.removeItem(TOKEN_KEY);
+      window.location.href = 'index.html';
+      return { response, result: { error: 'Unauthorized' } };
+    }
+    
+    const result = await response.json();
+
+    if (loadingElement) {
+      loadingElement.style.display = 'none';
+    }
+
+    if (DEBUG_MODE) {
+      console.log(`API Call ${method} ${endpoint}:`, { response: response.status, result });
+    }
+
+    return { response, result };
+  } catch (error) {
+    if (loadingElement) {
+      loadingElement.style.display = 'none';
+    }
+
+    if (DEBUG_MODE) {
+      console.error(`API Error ${method} ${endpoint}:`, error);
+    }
+
+    throw error;
+  }
+}
+
+
+
+// ==================== AI DIET CLASSIFICATION ====================
+
+async function runDietClassification() {
+    const resultsContainer = document.getElementById('aiClassificationResults');
+    
+    // Get button dynamically
+    const button = document.querySelector('button[onclick="runDietClassification()"]');
+    
+    if (!button) {
+        console.error('Button not found');
+        return;
+    }
+    
+    // Show loading state
+    button.disabled = true;
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<div style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 10px;"></div> Analyzing...';
+    
+    // Show results container
+    if (resultsContainer) {
+        resultsContainer.style.display = 'block';
+        resultsContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <div style="border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+                <h3 style="color: #667eea;">🧠 AI is analyzing your diet patterns...</h3>
+                <p style="color: #666;">Using supervised machine learning algorithms</p>
+            </div>
+        `;
+    }
+    
+    try {
+        const { response, result } = await makeApiCall('/ai/diet-classification');
+        
+        if (response.ok) {
+            displayDietClassification(result);
+        } else {
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div style="background: #fff3cd; padding: 30px; border-radius: 10px; text-align: center;">
+                        <h3 style="color: #856404;">⚠️ ${result.error || 'Analysis failed'}</h3>
+                        <p style="color: #856404;">${result.current_meals ? `You have ${result.current_meals} meals logged. Need at least 5 meals for AI analysis.` : 'Please log more meals and try again.'}</p>
+                        <button onclick="showAddMealModal()" style="margin-top: 15px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            Add More Meals
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    } catch (error) {
+        console.error('AI Classification error:', error);
+        if (resultsContainer) {
+            resultsContainer.innerHTML = `
+                <div style="background: #f8d7da; padding: 30px; border-radius: 10px; text-align: center;">
+                    <h3 style="color: #721c24;">❌ Connection Error</h3>
+                    <p style="color: #721c24;">Please check your internet connection and try again.</p>
+                    <p style="color: #721c24; font-size: 12px; margin-top: 10px;">Error: ${error.message}</p>
+                </div>
+            `;
+        }
+    } finally {
+        // Reset button
+        button.disabled = false;
+        button.innerHTML = originalHTML;
+    }
+}
+
+function displayDietClassification(data) {
+    const resultsContainer = document.getElementById('aiClassificationResults');
+    
+    if (!resultsContainer) return;
+    
+    const html = `
+        <div style="padding: 25px; background: white; border-radius: 15px;">
+            <!-- Algorithm Badge -->
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span style="background: #667eea; color: white; padding: 8px 20px; border-radius: 20px; font-weight: 600;">
+                    📊 ${data.algorithm}
+                </span>
+            </div>
+            
+            <!-- Diet Type Display -->
+            <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; color: white; margin-bottom: 25px;">
+                <h3 style="font-size: 32px; margin-bottom: 10px;">🎯 ${data.classification.diet_type}</h3>
+                <div style="display: inline-block; background: rgba(255, 255, 255, 0.3); padding: 8px 20px; border-radius: 25px; font-size: 18px; font-weight: 600;">
+                    ${data.classification.confidence}% Confidence
+                </div>
+            </div>
+            
+            <!-- Health Score -->
+            <div style="text-align: center; margin: 25px 0;">
+                <h4 style="color: #667eea; margin-bottom: 15px;">Your Health Score</h4>
+                <div style="position: relative; width: 150px; height: 150px; margin: 0 auto;">
+                    <svg width="150" height="150" style="transform: rotate(-90deg);">
+                        <circle cx="75" cy="75" r="60" stroke="#e0e0e0" stroke-width="12" fill="none" />
+                        <circle cx="75" cy="75" r="60" 
+                                stroke="#4CAF50" 
+                                stroke-width="12" 
+                                fill="none"
+                                stroke-dasharray="${(data.classification.health_score / 100) * 377} 377"
+                                stroke-linecap="round" />
+                    </svg>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; font-weight: 700; color: #667eea;">
+                        ${data.classification.health_score}
+                    </div>
+                </div>
+                <p style="color: #666; margin-top: 10px;">out of 100</p>
+            </div>
+            
+            <!-- Nutrition Features -->
+            <h4 style="color: #667eea; margin: 25px 0 15px;">📈 Your Nutrition Profile</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin: 20px 0;">
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #667eea;">
+                    <h4 style="color: #667eea; font-size: 14px; margin-bottom: 8px;">PROTEIN</h4>
+                    <div style="font-size: 24px; font-weight: 700; color: #333;">${data.features.protein_ratio}%</div>
+                </div>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #4CAF50;">
+                    <h4 style="color: #4CAF50; font-size: 14px; margin-bottom: 8px;">CARBS</h4>
+                    <div style="font-size: 24px; font-weight: 700; color: #333;">${data.features.carbs_ratio}%</div>
+                </div>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #FFC107;">
+                    <h4 style="color: #FFC107; font-size: 14px; margin-bottom: 8px;">FAT</h4>
+                    <div style="font-size: 24px; font-weight: 700; color: #333;">${data.features.fat_ratio}%</div>
+                </div>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #9C27B0;">
+                    <h4 style="color: #9C27B0; font-size: 14px; margin-bottom: 8px;">MEALS</h4>
+                    <div style="font-size: 24px; font-weight: 700; color: #333;">${data.features.total_meals_analyzed}</div>
+                </div>
+            </div>
+            
+            <!-- AI Recommendations -->
+            <div style="background: #fff3cd; padding: 20px; border-radius: 10px; border-left: 5px solid #ffc107; margin-top: 20px;">
+                <h4 style="color: #856404; margin-bottom: 15px; font-size: 18px;">💡 AI-Powered Recommendations</h4>
+                ${data.recommendations.map(rec => `
+                    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: white; border-radius: 8px; margin-bottom: 10px;">
+                        <div style="font-size: 24px; flex-shrink: 0;">${rec.substring(0, 2)}</div>
+                        <div style="font-size: 15px; color: #333; line-height: 1.5;">${rec.substring(2)}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    
+    resultsContainer.innerHTML = html;
+    resultsContainer.style.display = 'block';
+    
+    // Scroll to results smoothly
+    setTimeout(() => {
+        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+}
 
 // Display meals in UI
 function displayMeals(meals) {
@@ -910,3 +1117,5 @@ window.onclick = function(event) {
     closeProfileModal();
   }
 }
+
+

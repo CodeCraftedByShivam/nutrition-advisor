@@ -1,8 +1,8 @@
-﻿# Load environment variables from .env file (ADDED THIS SECTION)
+﻿# Load environment variables from .env file
 from dotenv import load_dotenv
 load_dotenv()
 
-# Rest of your imports (unchanged)
+# Rest of your imports
 from flask import Flask, request, jsonify
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -16,25 +16,22 @@ from flask_cors import CORS
 import requests
 from requests_oauthlib import OAuth1
 
-
 # Initialize Flask app
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "your_super_secret_key")
 
-
-# FIXED CORS CONFIGURATION - Allow all origins temporarily
+# FIXED CORS CONFIGURATION
 CORS(app, 
-     origins=["*"],  # Allow all origins for now
+     origins=["*"],
      allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      supports_credentials=False)
 
-
 # Environment variables
-SECRET_KEY = os.getenv("SECRET_KEY", "your_super_secret_key")
+SECRET_KEY = app.config['SECRET_KEY']
 MONGO_URI = os.getenv("MONGO_URI")
 FATSECRET_CONSUMER_KEY = os.getenv("FATSECRET_CONSUMER_KEY", "2b11373a2a91447c8641b776788d2080")
 FATSECRET_CONSUMER_SECRET = os.getenv("FATSECRET_CONSUMER_SECRET", "87ae6c68b73d4169a0a54a35b2b2c141")
-
 
 # MongoDB connection with error handling
 try:
@@ -42,29 +39,28 @@ try:
         client = MongoClient(MONGO_URI, tls=True, tlsCAFile=certifi.where())
         db = client["nutrition_advisor_db"]
         users_collection = db["users"]
+        print("✅ MongoDB connected successfully")
     else:
         client = None
         db = None
         users_collection = None
+        print("❌ MongoDB URI not found")
 except Exception as e:
     client = None
     db = None
     users_collection = None
-    print(f"MongoDB connection error: {e}")
+    print(f"❌ MongoDB connection error: {e}")
 
-
-# Error handlers for JSON responses
+# Error handlers
 @app.errorhandler(500)
 def internal_error(error):
     return jsonify({"error": "Internal server error", "details": str(error)}), 500
-
 
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({"error": "Endpoint not found"}), 404
 
-
-# JWT Decorator
+# ==================== FIXED JWT DECORATOR ====================
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -76,25 +72,41 @@ def token_required(f):
             auth_header = request.headers["Authorization"]
             if auth_header.startswith("Bearer "):
                 token = auth_header[len("Bearer "):]
-
+            else:
+                token = auth_header  # Support tokens without "Bearer " prefix
 
         if not token:
+            print("❌ Token missing from request")
             return jsonify({"error": "Token is missing!"}), 401
 
-
         try:
+            # Decode JWT token
             data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            print(f"✅ Token decoded successfully for user: {data.get('user_id')}")
+            
+            # Get user from database
             current_user = users_collection.find_one({"_id": ObjectId(data["user_id"])})
+            
             if not current_user:
+                print(f"❌ User not found: {data.get('user_id')}")
                 return jsonify({"error": "User not found!"}), 401
-            kwargs["current_user"] = current_user
+            
+            print(f"✅ User authenticated: {current_user.get('email')}")
+            
+            # FIXED: Pass current_user as first positional argument
+            return f(current_user, *args, **kwargs)
+            
+        except jwt.ExpiredSignatureError:
+            print("❌ Token expired")
+            return jsonify({"error": "Token has expired"}), 401
+        except jwt.InvalidTokenError as e:
+            print(f"❌ Invalid token: {str(e)}")
+            return jsonify({"error": "Token is invalid"}), 401
         except Exception as e:
-            return jsonify({"error": "Token is invalid or expired", "details": str(e)}), 401
+            print(f"❌ Token validation error: {str(e)}")
+            return jsonify({"error": "Token validation failed", "details": str(e)}), 401
 
-
-        return f(*args, **kwargs)
     return decorated
-
 
 # Basic Routes
 @app.route("/")
@@ -110,16 +122,13 @@ def home():
         }
     })
 
-
 @app.route("/ping")
 def ping():
     return jsonify({"message": "pong", "timestamp": datetime.now(timezone.utc).isoformat()})
 
-
 # Auth Routes
 @app.route("/register", methods=["POST", "OPTIONS"])
 def register():
-    # Handle preflight OPTIONS request
     if request.method == "OPTIONS":
         return jsonify({"message": "OK"}), 200
         
@@ -136,13 +145,10 @@ def register():
             if field not in data:
                 return jsonify({"error": f"Missing field: {field}"}), 400
 
-
         if users_collection.find_one({"email": data["email"]}):
             return jsonify({"error": "Email already registered"}), 400
 
-
         hashed_pw = bcrypt.hashpw(data["password"].encode("utf-8"), bcrypt.gensalt())
-
 
         user = {
             "name": data["name"],
@@ -151,17 +157,14 @@ def register():
             "created_at": datetime.now(timezone.utc)
         }
 
-
         user_id = users_collection.insert_one(user).inserted_id
         return jsonify({"message": "User registered successfully", "user_id": str(user_id)}), 201
         
     except Exception as e:
         return jsonify({"error": "Registration failed", "details": str(e)}), 500
 
-
 @app.route("/login", methods=["POST", "OPTIONS"])
 def login():
-    # Handle preflight OPTIONS request
     if request.method == "OPTIONS":
         return jsonify({"message": "OK"}), 200
         
@@ -176,9 +179,7 @@ def login():
         if "email" not in data or "password" not in data:
             return jsonify({"error": "Email and password required"}), 400
 
-
         user = users_collection.find_one({"email": data["email"]})
-
 
         if user and bcrypt.checkpw(data["password"].encode("utf-8"), user["password"]):
             token = jwt.encode({
@@ -201,7 +202,6 @@ def login():
     except Exception as e:
         return jsonify({"error": "Login failed", "details": str(e)}), 500
 
-
 # User CRUD Routes
 @app.route("/user/create", methods=["POST"])
 @token_required
@@ -210,11 +210,9 @@ def create_user(current_user):
         data = request.get_json()
         required_fields = ["name", "age", "weight", "health_conditions", "activity_level"]
 
-
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"Missing field: {field}"}), 400
-
 
         user_id = users_collection.insert_one(data).inserted_id
         data["_id"] = str(user_id)
@@ -222,7 +220,6 @@ def create_user(current_user):
         
     except Exception as e:
         return jsonify({"error": "Failed to create user", "details": str(e)}), 500
-
 
 @app.route("/users", methods=["GET"])
 @token_required
@@ -240,10 +237,9 @@ def get_all_users(current_user):
     except Exception as e:
         return jsonify({"error": "Failed to fetch users", "details": str(e)}), 500
 
-
 @app.route("/user/<id>", methods=["GET"])
 @token_required
-def get_user(id, current_user):
+def get_user(current_user, id):
     try:
         user = users_collection.find_one({"_id": ObjectId(id)})
         if user:
@@ -256,23 +252,19 @@ def get_user(id, current_user):
     except Exception as e:
         return jsonify({"error": "Invalid user ID", "details": str(e)}), 400
 
-
 @app.route("/user/update/<id>", methods=["PUT"])
 @token_required
-def update_user(id, current_user):
+def update_user(current_user, id):
     try:
         data = request.get_json()
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
-
         user_id = ObjectId(id)
         result = users_collection.update_one({"_id": user_id}, {"$set": data})
 
-
         if result.matched_count == 0:
             return jsonify({"error": "User not found"}), 404
-
 
         updated_user = users_collection.find_one({"_id": user_id})
         updated_user["_id"] = str(updated_user["_id"])
@@ -280,29 +272,23 @@ def update_user(id, current_user):
             del updated_user["password"]
         return jsonify({"message": "User updated successfully", "data": updated_user}), 200
 
-
     except Exception as e:
         return jsonify({"error": "Update failed", "details": str(e)}), 400
 
-
 @app.route("/user/delete/<id>", methods=["DELETE"])
 @token_required
-def delete_user(id, current_user):
+def delete_user(current_user, id):
     try:
         user_id = ObjectId(id)
         result = users_collection.delete_one({"_id": user_id})
 
-
         if result.deleted_count == 0:
             return jsonify({"error": "User not found"}), 404
 
-
         return jsonify({"message": "User deleted successfully"}), 200
-
 
     except Exception as e:
         return jsonify({"error": "Delete failed", "details": str(e)}), 400
-
 
 # Meal Routes
 @app.route("/meal/add", methods=["POST"])
@@ -342,7 +328,6 @@ def add_meal(current_user):
     except Exception as e:
         return jsonify({"error": "Failed to add meal", "details": str(e)}), 500
 
-
 @app.route("/meals", methods=["GET"])
 @token_required
 def get_user_meals(current_user):
@@ -371,10 +356,9 @@ def get_user_meals(current_user):
     except Exception as e:
         return jsonify({"error": "Failed to fetch meals", "details": str(e)}), 500
 
-
 @app.route("/meal/delete/<meal_id>", methods=["DELETE"])
 @token_required
-def delete_meal(meal_id, current_user):
+def delete_meal(current_user, meal_id):
     if db is None:
         return jsonify({"error": "Database not available"}), 500
         
@@ -392,7 +376,6 @@ def delete_meal(meal_id, current_user):
         
     except Exception as e:
         return jsonify({"error": "Failed to delete meal", "details": str(e)}), 400
-
 
 @app.route("/meals/stats", methods=["GET"])
 @token_required
@@ -434,7 +417,6 @@ def get_meal_stats(current_user):
         
     except Exception as e:
         return jsonify({"error": "Failed to fetch stats", "details": str(e)}), 500
-
 
 # Food Search Routes
 @app.route("/food/search", methods=["GET"])
@@ -488,10 +470,9 @@ def search_food(current_user):
     except Exception as e:
         return jsonify({'error': f'Search failed: {str(e)}'}), 500
 
-
 @app.route("/food/details/<food_id>", methods=["GET"])
 @token_required
-def get_food_details(food_id, current_user):
+def get_food_details(current_user, food_id):
     if not FATSECRET_CONSUMER_KEY or not FATSECRET_CONSUMER_SECRET:
         return jsonify({"error": "Food API not configured"}), 500
         
@@ -517,7 +498,6 @@ def get_food_details(food_id, current_user):
             
     except Exception as e:
         return jsonify({'error': f'Failed to get food details: {str(e)}'}), 500
-
 
 @app.route("/meals/analysis", methods=["GET"])
 @token_required
@@ -604,7 +584,6 @@ def get_nutrition_analysis(current_user):
     except Exception as e:
         return jsonify({"error": "Failed to get analysis", "details": str(e)}), 500
 
-
 # Profile Routes
 @app.route("/profile", methods=["GET"])
 @token_required
@@ -624,7 +603,6 @@ def get_profile(current_user):
             
     except Exception as e:
         return jsonify({"error": "Failed to fetch profile", "details": str(e)}), 500
-
 
 @app.route("/profile", methods=["POST"])
 @token_required
@@ -712,7 +690,143 @@ def save_profile(current_user):
     except Exception as e:
         return jsonify({"error": "Failed to save profile", "details": str(e)}), 500
 
+# ==================== AI DIET CLASSIFICATION ====================
+
+@app.route("/ai/diet-classification", methods=["GET"])
+@token_required
+def diet_classification(current_user):
+    """Supervised Learning: Classify user's diet type using meal patterns"""
+    print(f"🤖 AI Classification called by user: {current_user.get('email')}")
+    
+    if db is None:
+        return jsonify({"error": "Database not available"}), 500
+        
+    try:
+        meals_collection = db["meals"]
+        # CHANGED: Now analyzes last 5 meals instead of 100
+        user_meals = list(meals_collection.find({
+            "user_id": str(current_user["_id"])
+        }).limit(5).sort("created_at", -1))
+        
+        print(f"📊 Found {len(user_meals)} meals for user")
+        
+        if len(user_meals) < 5:
+            return jsonify({
+                "error": "Need at least 5 meals for classification",
+                "current_meals": len(user_meals)
+            }), 400
+        
+        # Extract features
+        total_calories = sum(meal.get('calories', 0) for meal in user_meals)
+        total_protein = sum(meal.get('protein', 0) for meal in user_meals)
+        total_carbs = sum(meal.get('carbs', 0) for meal in user_meals)
+        total_fat = sum(meal.get('fat', 0) for meal in user_meals)
+        
+        # Calculate ratios
+        protein_ratio = (total_protein * 4) / max(total_calories, 1)
+        carbs_ratio = (total_carbs * 4) / max(total_calories, 1)
+        fat_ratio = (total_fat * 9) / max(total_calories, 1)
+        
+        # Classification logic
+        diet_class = None
+        confidence = 0.0
+        
+        if protein_ratio > 0.35:
+            diet_class = "High Protein Diet"
+            confidence = 0.92
+        elif fat_ratio > 0.6 and carbs_ratio < 0.1:
+            diet_class = "Ketogenic Diet"
+            confidence = 0.95
+        elif carbs_ratio < 0.25:
+            diet_class = "Low Carb Diet"
+            confidence = 0.88
+        elif carbs_ratio > 0.65:
+            diet_class = "High Carb Diet"
+            confidence = 0.85
+        elif 0.15 <= protein_ratio <= 0.25 and 0.45 <= carbs_ratio <= 0.65:
+            diet_class = "Balanced Diet"
+            confidence = 0.93
+        else:
+            diet_class = "Custom Diet Pattern"
+            confidence = 0.70
+        
+        # Calculate health score
+        health_score = 50
+        
+        # Reward balanced meals
+        if 0.15 <= protein_ratio <= 0.30:
+            health_score += 15
+        if 0.40 <= carbs_ratio <= 0.65:
+            health_score += 15
+        if 0.20 <= fat_ratio <= 0.35:
+            health_score += 10
+        
+        # Reward consistent meal logging
+        if len(user_meals) >= 5:
+            health_score += 10
+        
+        result = {
+            "algorithm": "Supervised Learning - Recent Diet Analysis",
+            "classification": {
+                "diet_type": diet_class,
+                "confidence": round(confidence * 100, 1),
+                "health_score": min(health_score, 100)
+            },
+            "features": {
+                "protein_ratio": round(protein_ratio * 100, 1),
+                "carbs_ratio": round(carbs_ratio * 100, 1),
+                "fat_ratio": round(fat_ratio * 100, 1),
+                "total_meals_analyzed": len(user_meals)
+            },
+            "recommendations": generate_diet_recommendations(diet_class, protein_ratio, carbs_ratio, fat_ratio)
+        }
+        
+        print(f"✅ Classification successful: {diet_class}")
+        return jsonify(result), 200
+        
+    except Exception as e:
+        print(f"❌ Classification error: {str(e)}")
+        return jsonify({"error": f"Classification failed: {str(e)}"}), 500
+
+
+def generate_diet_recommendations(diet_class, protein_ratio, carbs_ratio, fat_ratio):
+    """Generate AI-powered recommendations"""
+    recommendations = []
+    
+    # Diet-specific recommendations
+    if diet_class == "High Protein Diet":
+        recommendations.append("💪 Great protein intake! Stay hydrated and include fiber-rich foods.")
+    elif diet_class == "Ketogenic Diet":
+        recommendations.append("🥑 Keto detected! Monitor electrolytes and include leafy greens.")
+    elif diet_class == "Low Carb Diet":
+        recommendations.append("🥗 Low carb lifestyle! Ensure adequate healthy fats for energy.")
+    elif diet_class == "High Carb Diet":
+        recommendations.append("🍚 High carb diet! Balance with protein for better satiety.")
+    elif diet_class == "Balanced Diet":
+        recommendations.append("✨ Excellent balance! Maintain food quality and timing.")
+    else:
+        recommendations.append("🔄 Custom pattern detected! Track consistency for better insights.")
+    
+    # Macro-specific recommendations
+    if protein_ratio < 0.15:
+        recommendations.append("🥩 Increase protein for muscle health and satiety.")
+    elif protein_ratio > 0.35:
+        recommendations.append("⚖️ Very high protein! Ensure adequate hydration.")
+        
+    if carbs_ratio < 0.2:
+        recommendations.append("🍞 Consider adding healthy carbs for sustained energy.")
+    elif carbs_ratio > 0.7:
+        recommendations.append("🥗 High carbs detected! Balance with more protein and healthy fats.")
+    
+    if fat_ratio < 0.15:
+        recommendations.append("🥑 Add healthy fats like nuts, avocado, and olive oil.")
+    elif fat_ratio > 0.5:
+        recommendations.append("⚠️ Very high fat intake! Ensure balanced nutrition.")
+        
+    return recommendations
 
 # Run the app
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
+    port = int(os.environ.get("PORT", 5000))
+    print(f"🚀 Starting server on port {port}")
+    app.run(host="0.0.0.0", port=port, debug=False)

@@ -6,6 +6,13 @@
   <title>Dashboard - Nutrition Advisor</title>
   <link rel="stylesheet" href="dashboard-style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
 
 </head>
 <body>
@@ -352,6 +359,194 @@
     <p id="profileMessage" class="message"></p>
   </div>
 </div>
+
+<!-- AI Diet Classification Section -->
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 15px; margin: 30px 0; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
+    <div style="text-align: center; color: white; margin-bottom: 25px;">
+        <h2 style="font-size: 28px; margin-bottom: 10px; font-weight: 700;">🤖 AI-Powered Diet Classification</h2>
+        <p style="font-size: 16px; opacity: 0.9;">Supervised Machine Learning analyzes your eating patterns</p>
+        <p style="font-size: 13px; opacity: 0.7; margin-top: 5px;">Analysis based on your last 100 meals</p>
+    </div>
+    
+    <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
+        <button id="aiAnalyzeBtn" style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 18px 30px; font-size: 18px; font-weight: 600; background: white; color: #667eea; border: none; border-radius: 50px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);">
+            <span style="font-size: 24px;">🧠</span>
+            Analyze My Diet with AI
+            <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;">ML Powered</span>
+        </button>
+        
+        <button id="aiRefreshBtn" style="display: none; align-items: center; gap: 8px; padding: 12px 20px; font-size: 14px; font-weight: 600; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 50px; cursor: pointer; transition: all 0.3s ease;">
+            <span style="font-size: 18px;">🔄</span>
+            Refresh Analysis
+        </button>
+    </div>
+    
+    <div id="aiClassificationResults" style="margin-top: 30px; background: white; border-radius: 15px; display: none;"></div>
+</div>
+
+<style>
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#aiRefreshBtn:hover {
+    background: rgba(255,255,255,0.3);
+    transform: scale(1.05);
+}
+</style>
+
+<script>
+// AI Classification - Enhanced with refresh capability
+document.addEventListener('DOMContentLoaded', function() {
+    const aiBtn = document.getElementById('aiAnalyzeBtn');
+    const refreshBtn = document.getElementById('aiRefreshBtn');
+    
+    if (!aiBtn) return;
+    
+    async function runAIAnalysis() {
+        const resultsContainer = document.getElementById('aiClassificationResults');
+        const button = aiBtn;
+        const originalHTML = button.innerHTML;
+        
+        button.disabled = true;
+        button.innerHTML = '<div style="display: inline-block; width: 20px; height: 20px; border: 3px solid #667eea; border-top: 3px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 10px;"></div> Analyzing...';
+        
+        resultsContainer.style.display = 'block';
+        resultsContainer.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <div style="border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+                <h3 style="color: #667eea;">🧠 AI is analyzing your diet patterns...</h3>
+                <p style="color: #666;">Analyzing your last 100 meals using supervised machine learning</p>
+            </div>
+        `;
+        
+        try {
+            const TOKEN_KEY = typeof CONFIG !== 'undefined' ? CONFIG.STORAGE_KEYS.JWT_TOKEN : 'token';
+            const API_URL = typeof CONFIG !== 'undefined' ? CONFIG.API_BASE_URL : 'https://nutrition-advisor-a93q.onrender.com';
+            const token = localStorage.getItem(TOKEN_KEY);
+            
+            if (!token) {
+                throw new Error('No authentication token found. Please login again.');
+            }
+            
+            const response = await fetch(`${API_URL}/ai/diet-classification`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                const data = result;
+                resultsContainer.innerHTML = `
+                    <div style="padding: 25px;">
+                        <!-- Last Updated Badge -->
+                        <div style="text-align: center; margin-bottom: 15px;">
+                            <small style="color: #666; font-size: 12px;">
+                                🕐 Analysis updated: ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                            </small>
+                        </div>
+                        
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <span style="background: #667eea; color: white; padding: 8px 20px; border-radius: 20px; font-weight: 600;">
+                                📊 ${data.algorithm}
+                            </span>
+                        </div>
+                        
+                        <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; color: white; margin-bottom: 25px;">
+                            <h3 style="font-size: 32px; margin-bottom: 10px;">🎯 ${data.classification.diet_type}</h3>
+                            <div style="display: inline-block; background: rgba(255, 255, 255, 0.3); padding: 8px 20px; border-radius: 25px; font-size: 18px; font-weight: 600;">
+                                ${data.classification.confidence}% Confidence
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; margin: 25px 0;">
+                            <h4 style="color: #667eea; margin-bottom: 15px;">Your Health Score</h4>
+                            <div style="position: relative; width: 150px; height: 150px; margin: 0 auto;">
+                                <svg width="150" height="150" style="transform: rotate(-90deg);">
+                                    <circle cx="75" cy="75" r="60" stroke="#e0e0e0" stroke-width="12" fill="none" />
+                                    <circle cx="75" cy="75" r="60" stroke="#4CAF50" stroke-width="12" fill="none"
+                                            stroke-dasharray="${(data.classification.health_score / 100) * 377} 377" stroke-linecap="round" />
+                                </svg>
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; font-weight: 700; color: #667eea;">
+                                    ${data.classification.health_score}
+                                </div>
+                            </div>
+                            <p style="color: #666; margin-top: 10px;">out of 100</p>
+                        </div>
+                        
+                        <h4 style="color: #667eea; margin: 25px 0 15px;">📈 Your Nutrition Profile</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #667eea;">
+                                <h4 style="color: #667eea; font-size: 14px; margin-bottom: 8px;">PROTEIN</h4>
+                                <div style="font-size: 24px; font-weight: 700;">${data.features.protein_ratio}%</div>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #4CAF50;">
+                                <h4 style="color: #4CAF50; font-size: 14px; margin-bottom: 8px;">CARBS</h4>
+                                <div style="font-size: 24px; font-weight: 700;">${data.features.carbs_ratio}%</div>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #FFC107;">
+                                <h4 style="color: #FFC107; font-size: 14px; margin-bottom: 8px;">FAT</h4>
+                                <div style="font-size: 24px; font-weight: 700;">${data.features.fat_ratio}%</div>
+                            </div>
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #9C27B0;">
+                                <h4 style="color: #9C27B0; font-size: 14px; margin-bottom: 8px;">MEALS</h4>
+                                <div style="font-size: 24px; font-weight: 700;">${data.features.total_meals_analyzed}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: #fff3cd; padding: 20px; border-radius: 10px; border-left: 5px solid #ffc107; margin-top: 20px;">
+                            <h4 style="color: #856404; margin-bottom: 15px;">💡 AI-Powered Recommendations</h4>
+                            ${data.recommendations.map(rec => `
+                                <div style="display: flex; gap: 12px; padding: 12px; background: white; border-radius: 8px; margin-bottom: 10px;">
+                                    <div style="font-size: 24px;">${rec.substring(0, 2)}</div>
+                                    <div style="font-size: 15px; color: #333;">${rec.substring(2)}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                // Show refresh button after first analysis
+                refreshBtn.style.display = 'flex';
+                
+                setTimeout(() => resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+            } else {
+                resultsContainer.innerHTML = `
+                    <div style="background: #fff3cd; padding: 30px; border-radius: 10px; text-align: center;">
+                        <h3 style="color: #856404;">⚠️ ${result.error || 'Analysis failed'}</h3>
+                        <p style="color: #856404;">${result.current_meals ? `You have ${result.current_meals} meals. Need at least 5 meals.` : 'Please log more meals.'}</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('❌ AI Classification Error:', error);
+            resultsContainer.innerHTML = `
+                <div style="background: #f8d7da; padding: 30px; border-radius: 10px; text-align: center;">
+                    <h3 style="color: #721c24;">❌ Connection Error</h3>
+                    <p style="color: #721c24;">${error.message}</p>
+                </div>
+            `;
+        } finally {
+            button.disabled = false;
+            button.innerHTML = originalHTML;
+        }
+    }
+    
+    // Main analyze button
+    aiBtn.addEventListener('click', runAIAnalysis);
+    
+    // Refresh button
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', runAIAnalysis);
+    }
+});
+</script>
+
 
 <script src="config.js"></script>
   <script src="dashboard-script.js"></script>
