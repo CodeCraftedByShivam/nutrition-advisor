@@ -1,4 +1,9 @@
-﻿from flask import Flask, request, jsonify
+﻿# Load environment variables from .env file (ADDED THIS SECTION)
+from dotenv import load_dotenv
+load_dotenv()
+
+# Rest of your imports (unchanged)
+from flask import Flask, request, jsonify
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 import bcrypt
@@ -11,8 +16,10 @@ from flask_cors import CORS
 import requests
 from requests_oauthlib import OAuth1
 
+
 # Initialize Flask app
 app = Flask(__name__)
+
 
 # FIXED CORS CONFIGURATION - Allow all origins temporarily
 CORS(app, 
@@ -21,11 +28,13 @@ CORS(app,
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      supports_credentials=False)
 
+
 # Environment variables
 SECRET_KEY = os.getenv("SECRET_KEY", "your_super_secret_key")
 MONGO_URI = os.getenv("MONGO_URI")
 FATSECRET_CONSUMER_KEY = os.getenv("FATSECRET_CONSUMER_KEY", "2b11373a2a91447c8641b776788d2080")
 FATSECRET_CONSUMER_SECRET = os.getenv("FATSECRET_CONSUMER_SECRET", "87ae6c68b73d4169a0a54a35b2b2c141")
+
 
 # MongoDB connection with error handling
 try:
@@ -43,14 +52,17 @@ except Exception as e:
     users_collection = None
     print(f"MongoDB connection error: {e}")
 
+
 # Error handlers for JSON responses
 @app.errorhandler(500)
 def internal_error(error):
     return jsonify({"error": "Internal server error", "details": str(error)}), 500
 
+
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({"error": "Endpoint not found"}), 404
+
 
 # JWT Decorator
 def token_required(f):
@@ -65,8 +77,10 @@ def token_required(f):
             if auth_header.startswith("Bearer "):
                 token = auth_header[len("Bearer "):]
 
+
         if not token:
             return jsonify({"error": "Token is missing!"}), 401
+
 
         try:
             data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
@@ -77,8 +91,10 @@ def token_required(f):
         except Exception as e:
             return jsonify({"error": "Token is invalid or expired", "details": str(e)}), 401
 
+
         return f(*args, **kwargs)
     return decorated
+
 
 # Basic Routes
 @app.route("/")
@@ -94,9 +110,11 @@ def home():
         }
     })
 
+
 @app.route("/ping")
 def ping():
     return jsonify({"message": "pong", "timestamp": datetime.now(timezone.utc).isoformat()})
+
 
 # Auth Routes
 @app.route("/register", methods=["POST", "OPTIONS"])
@@ -118,10 +136,13 @@ def register():
             if field not in data:
                 return jsonify({"error": f"Missing field: {field}"}), 400
 
+
         if users_collection.find_one({"email": data["email"]}):
             return jsonify({"error": "Email already registered"}), 400
 
+
         hashed_pw = bcrypt.hashpw(data["password"].encode("utf-8"), bcrypt.gensalt())
+
 
         user = {
             "name": data["name"],
@@ -130,11 +151,13 @@ def register():
             "created_at": datetime.now(timezone.utc)
         }
 
+
         user_id = users_collection.insert_one(user).inserted_id
         return jsonify({"message": "User registered successfully", "user_id": str(user_id)}), 201
         
     except Exception as e:
         return jsonify({"error": "Registration failed", "details": str(e)}), 500
+
 
 @app.route("/login", methods=["POST", "OPTIONS"])
 def login():
@@ -153,7 +176,9 @@ def login():
         if "email" not in data or "password" not in data:
             return jsonify({"error": "Email and password required"}), 400
 
+
         user = users_collection.find_one({"email": data["email"]})
+
 
         if user and bcrypt.checkpw(data["password"].encode("utf-8"), user["password"]):
             token = jwt.encode({
@@ -176,6 +201,7 @@ def login():
     except Exception as e:
         return jsonify({"error": "Login failed", "details": str(e)}), 500
 
+
 # User CRUD Routes
 @app.route("/user/create", methods=["POST"])
 @token_required
@@ -184,9 +210,11 @@ def create_user(current_user):
         data = request.get_json()
         required_fields = ["name", "age", "weight", "health_conditions", "activity_level"]
 
+
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"Missing field: {field}"}), 400
+
 
         user_id = users_collection.insert_one(data).inserted_id
         data["_id"] = str(user_id)
@@ -194,6 +222,7 @@ def create_user(current_user):
         
     except Exception as e:
         return jsonify({"error": "Failed to create user", "details": str(e)}), 500
+
 
 @app.route("/users", methods=["GET"])
 @token_required
@@ -211,6 +240,7 @@ def get_all_users(current_user):
     except Exception as e:
         return jsonify({"error": "Failed to fetch users", "details": str(e)}), 500
 
+
 @app.route("/user/<id>", methods=["GET"])
 @token_required
 def get_user(id, current_user):
@@ -226,6 +256,7 @@ def get_user(id, current_user):
     except Exception as e:
         return jsonify({"error": "Invalid user ID", "details": str(e)}), 400
 
+
 @app.route("/user/update/<id>", methods=["PUT"])
 @token_required
 def update_user(id, current_user):
@@ -234,11 +265,14 @@ def update_user(id, current_user):
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
+
         user_id = ObjectId(id)
         result = users_collection.update_one({"_id": user_id}, {"$set": data})
 
+
         if result.matched_count == 0:
             return jsonify({"error": "User not found"}), 404
+
 
         updated_user = users_collection.find_one({"_id": user_id})
         updated_user["_id"] = str(updated_user["_id"])
@@ -246,8 +280,10 @@ def update_user(id, current_user):
             del updated_user["password"]
         return jsonify({"message": "User updated successfully", "data": updated_user}), 200
 
+
     except Exception as e:
         return jsonify({"error": "Update failed", "details": str(e)}), 400
+
 
 @app.route("/user/delete/<id>", methods=["DELETE"])
 @token_required
@@ -256,13 +292,17 @@ def delete_user(id, current_user):
         user_id = ObjectId(id)
         result = users_collection.delete_one({"_id": user_id})
 
+
         if result.deleted_count == 0:
             return jsonify({"error": "User not found"}), 404
 
+
         return jsonify({"message": "User deleted successfully"}), 200
+
 
     except Exception as e:
         return jsonify({"error": "Delete failed", "details": str(e)}), 400
+
 
 # Meal Routes
 @app.route("/meal/add", methods=["POST"])
@@ -302,6 +342,7 @@ def add_meal(current_user):
     except Exception as e:
         return jsonify({"error": "Failed to add meal", "details": str(e)}), 500
 
+
 @app.route("/meals", methods=["GET"])
 @token_required
 def get_user_meals(current_user):
@@ -330,6 +371,7 @@ def get_user_meals(current_user):
     except Exception as e:
         return jsonify({"error": "Failed to fetch meals", "details": str(e)}), 500
 
+
 @app.route("/meal/delete/<meal_id>", methods=["DELETE"])
 @token_required
 def delete_meal(meal_id, current_user):
@@ -350,6 +392,7 @@ def delete_meal(meal_id, current_user):
         
     except Exception as e:
         return jsonify({"error": "Failed to delete meal", "details": str(e)}), 400
+
 
 @app.route("/meals/stats", methods=["GET"])
 @token_required
@@ -391,6 +434,7 @@ def get_meal_stats(current_user):
         
     except Exception as e:
         return jsonify({"error": "Failed to fetch stats", "details": str(e)}), 500
+
 
 # Food Search Routes
 @app.route("/food/search", methods=["GET"])
@@ -444,6 +488,7 @@ def search_food(current_user):
     except Exception as e:
         return jsonify({'error': f'Search failed: {str(e)}'}), 500
 
+
 @app.route("/food/details/<food_id>", methods=["GET"])
 @token_required
 def get_food_details(food_id, current_user):
@@ -472,6 +517,7 @@ def get_food_details(food_id, current_user):
             
     except Exception as e:
         return jsonify({'error': f'Failed to get food details: {str(e)}'}), 500
+
 
 @app.route("/meals/analysis", methods=["GET"])
 @token_required
@@ -558,6 +604,7 @@ def get_nutrition_analysis(current_user):
     except Exception as e:
         return jsonify({"error": "Failed to get analysis", "details": str(e)}), 500
 
+
 # Profile Routes
 @app.route("/profile", methods=["GET"])
 @token_required
@@ -577,6 +624,7 @@ def get_profile(current_user):
             
     except Exception as e:
         return jsonify({"error": "Failed to fetch profile", "details": str(e)}), 500
+
 
 @app.route("/profile", methods=["POST"])
 @token_required
@@ -663,6 +711,7 @@ def save_profile(current_user):
         
     except Exception as e:
         return jsonify({"error": "Failed to save profile", "details": str(e)}), 500
+
 
 # Run the app
 if __name__ == "__main__":
