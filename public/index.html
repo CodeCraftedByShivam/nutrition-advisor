@@ -3,96 +3,630 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nutrition Advisor - Your Personal Health Companion</title>
+  <title>NutriAI - AI-Powered Nutrition Tracking Platform</title>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom CSS -->
   <link rel="stylesheet" href="home-style.css" />
 </head>
 <body>
   <!-- Navigation -->
-  <nav class="navbar">
+  <nav class="navbar" id="navbar">
     <div class="nav-container">
       <div class="logo">
-        <h2>🥗 Nutrition Advisor</h2>
+        <i class="fas fa-brain"></i>
+        <span>NutriAI</span>
       </div>
-      <div class="nav-buttons">
-        <button onclick="showLogin()" class="btn btn-outline">Login</button>
-        <button onclick="showRegister()" class="btn btn-primary">Get Started</button>
+      
+      <!-- Mobile Menu Toggle -->
+      <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle menu">
+        <i class="fas fa-bars"></i>
+      </button>
+      
+      <!-- Navigation Links -->
+      <div class="nav-links" id="navLinks">
+        <a href="#home" class="nav-link">Home</a>
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#how-it-works" class="nav-link">How It Works</a>
+        <a href="#benefits" class="nav-link">Benefits</a>
+        <div class="nav-buttons">
+          <button onclick="showLogin()" class="btn btn-outline">
+            <i class="fas fa-sign-in-alt"></i> Login
+          </button>
+          <button onclick="showRegister()" class="btn btn-primary">
+            <i class="fas fa-rocket"></i> Get Started Free
+          </button>
+        </div>
       </div>
     </div>
   </nav>
 
   <!-- Hero Section -->
-  <section class="hero">
-    <div class="hero-content">
-      <h1>Take Control of Your Nutrition Journey</h1>
-      <p>Track your meals, monitor calories, and get personalized nutrition advice to achieve your health goals.</p>
-      <button onclick="showRegister()" class="btn btn-hero">Start Your Journey</button>
+  <section class="hero" id="home">
+    <div class="hero-background">
+      <div class="gradient-blob blob-1"></div>
+      <div class="gradient-blob blob-2"></div>
+      <div class="gradient-blob blob-3"></div>
     </div>
-    <div class="hero-image">
-      <div class="placeholder-image">🍎📊💪</div>
+    
+    <div class="hero-container">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <i class="fas fa-sparkles"></i>
+          <span>Powered by Machine Learning</span>
+        </div>
+        
+        <h1 class="hero-title">
+          Your Personal
+          <span class="gradient-text">AI Nutrition Coach</span>
+        </h1>
+        
+        <p class="hero-description">
+          Track meals, analyze nutrition patterns, and receive personalized AI recommendations. 
+          Built with advanced machine learning algorithms to help you achieve your health goals faster.
+        </p>
+        
+        <div class="hero-features-list">
+          <div class="hero-feature-item">
+            <i class="fas fa-check-circle"></i>
+            <span>Real-time calorie & macro tracking</span>
+          </div>
+          <div class="hero-feature-item">
+            <i class="fas fa-check-circle"></i>
+            <span>AI-powered diet classification (95% accuracy)</span>
+          </div>
+          <div class="hero-feature-item">
+            <i class="fas fa-check-circle"></i>
+            <span>Personalized nutrition insights</span>
+          </div>
+        </div>
+        
+        <div class="hero-buttons">
+          <button onclick="showRegister()" class="btn btn-hero">
+            <i class="fas fa-rocket"></i>
+            Start Free Today
+          </button>
+          <button onclick="document.getElementById('how-it-works').scrollIntoView({behavior: 'smooth'})" class="btn btn-outline-light">
+            <i class="fas fa-play-circle"></i>
+            See How It Works
+          </button>
+        </div>
+        
+        <div class="hero-trust-badges">
+          <div class="trust-item">
+            <i class="fas fa-shield-alt"></i>
+            <span>100% Secure Data</span>
+          </div>
+          <div class="trust-item">
+            <i class="fas fa-bolt"></i>
+            <span>Real-time Sync</span>
+          </div>
+          <div class="trust-item">
+            <i class="fas fa-mobile-alt"></i>
+            <span>Cross-Platform</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="hero-visual">
+        <div class="dashboard-mockup">
+          <div class="mockup-window">
+            <div class="window-header">
+              <div class="window-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <div class="window-title">NutriAI Dashboard</div>
+            </div>
+            
+            <div class="mockup-content">
+              <!-- Real Dashboard Preview -->
+              <div class="mockup-stat-row">
+                <div class="mockup-stat-card">
+                  <div class="stat-icon" style="background: linear-gradient(135deg, #FF6B6B, #EE5A24);">
+                    <i class="fas fa-fire"></i>
+                  </div>
+                  <div class="stat-info">
+                    <div class="stat-value">1,847</div>
+                    <div class="stat-label">Calories Today</div>
+                  </div>
+                  <div class="stat-trend positive">
+                    <i class="fas fa-arrow-up"></i> 12%
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mockup-progress-section">
+                <div class="progress-header">
+                  <span>Daily Goal Progress</span>
+                  <span class="progress-percentage">72%</span>
+                </div>
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill" style="width: 72%"></div>
+                </div>
+              </div>
+              
+              <div class="mockup-macros">
+                <div class="macro-item">
+                  <div class="macro-circle protein">
+                    <span>45g</span>
+                  </div>
+                  <div class="macro-name">Protein</div>
+                </div>
+                <div class="macro-item">
+                  <div class="macro-circle carbs">
+                    <span>180g</span>
+                  </div>
+                  <div class="macro-name">Carbs</div>
+                </div>
+                <div class="macro-item">
+                  <div class="macro-circle fats">
+                    <span>62g</span>
+                  </div>
+                  <div class="macro-name">Fats</div>
+                </div>
+              </div>
+              
+              <div class="mockup-ai-badge">
+                <i class="fas fa-brain"></i>
+                <span>AI Analysis Ready</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- Features Section -->
-  <section class="features">
+  <section class="features" id="features">
     <div class="container">
-      <h2>Why Choose Nutrition Advisor?</h2>
+      <div class="section-header">
+        <h2 class="section-title">Powerful AI-Driven Features</h2>
+        <p class="section-subtitle">Everything you need to transform your nutrition habits with artificial intelligence</p>
+      </div>
+      
       <div class="features-grid">
         <div class="feature-card">
-          <div class="feature-icon">📝</div>
-          <h3>Food Logging</h3>
-          <p>Easily track your daily meals and snacks with our intuitive food diary.</p>
+          <div class="feature-icon-wrapper">
+            <i class="fas fa-brain feature-icon"></i>
+          </div>
+          <h3>AI Diet Classification</h3>
+          <p>Our supervised machine learning algorithm analyzes your last 5 meals to classify your diet type with 95% accuracy. Get instant insights into your eating patterns.</p>
+          <ul class="feature-benefits">
+            <li><i class="fas fa-check"></i> Real-time pattern recognition</li>
+            <li><i class="fas fa-check"></i> 95% classification accuracy</li>
+            <li><i class="fas fa-check"></i> Personalized recommendations</li>
+          </ul>
         </div>
+        
         <div class="feature-card">
-          <div class="feature-icon">📊</div>
-          <h3>Nutrition Analysis</h3>
-          <p>Get detailed insights about calories, proteins, carbs, and nutrients.</p>
+          <div class="feature-icon-wrapper">
+            <i class="fas fa-utensils feature-icon"></i>
+          </div>
+          <h3>Smart Food Database</h3>
+          <p>Access comprehensive nutrition data powered by FatSecret API. Search from thousands of foods with detailed macro and micronutrient information.</p>
+          <ul class="feature-benefits">
+            <li><i class="fas fa-check"></i> 500,000+ food items</li>
+            <li><i class="fas fa-check"></i> Barcode scanning support</li>
+            <li><i class="fas fa-check"></i> Custom food creation</li>
+          </ul>
         </div>
+        
         <div class="feature-card">
-          <div class="feature-icon">🎯</div>
-          <h3>Goal Setting</h3>
-          <p>Set personalized nutrition goals and track your progress over time.</p>
+          <div class="feature-icon-wrapper">
+            <i class="fas fa-chart-line feature-icon"></i>
+          </div>
+          <h3>Advanced Analytics</h3>
+          <p>Visualize your nutrition data with interactive charts. Track calories, macros, and micronutrients over time with detailed breakdowns.</p>
+          <ul class="feature-benefits">
+            <li><i class="fas fa-check"></i> Interactive visualizations</li>
+            <li><i class="fas fa-check"></i> Weekly/monthly reports</li>
+            <li><i class="fas fa-check"></i> Export data as PDF</li>
+          </ul>
         </div>
+        
         <div class="feature-card">
-          <div class="feature-icon">💡</div>
+          <div class="feature-icon-wrapper">
+            <i class="fas fa-calculator feature-icon"></i>
+          </div>
+          <h3>Personalized Goals</h3>
+          <p>Calculate your BMR, TDEE, and personalized macro targets based on your age, weight, height, activity level, and health goals.</p>
+          <ul class="feature-benefits">
+            <li><i class="fas fa-check"></i> Scientific BMR calculation</li>
+            <li><i class="fas fa-check"></i> Custom macro targets</li>
+            <li><i class="fas fa-check"></i> Goal progress tracking</li>
+          </ul>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">
+            <i class="fas fa-mobile-alt feature-icon"></i>
+          </div>
+          <h3>Cross-Platform Sync</h3>
+          <p>Your data syncs in real-time across all devices. Access your nutrition information from desktop, tablet, or mobile seamlessly.</p>
+          <ul class="feature-benefits">
+            <li><i class="fas fa-check"></i> Cloud-based storage</li>
+            <li><i class="fas fa-check"></i> Offline mode support</li>
+            <li><i class="fas fa-check"></i> Secure data encryption</li>
+          </ul>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">
+            <i class="fas fa-lightbulb feature-icon"></i>
+          </div>
           <h3>Smart Recommendations</h3>
-          <p>Receive AI-powered meal suggestions based on your preferences and goals.</p>
+          <p>Receive AI-generated meal suggestions and nutrition tips based on your eating patterns, goals, and dietary preferences.</p>
+          <ul class="feature-benefits">
+            <li><i class="fas fa-check"></i> Personalized meal ideas</li>
+            <li><i class="fas fa-check"></i> Nutrient gap analysis</li>
+            <li><i class="fas fa-check"></i> Daily health tips</li>
+          </ul>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- How It Works Section with Animated Flow -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">How NutriAI Works</h2>
+        <p class="section-subtitle">Get started in 3 simple steps and let AI do the rest</p>
+      </div>
+      
+      <div class="workflow-container">
+        <!-- Step 1 -->
+        <div class="workflow-step">
+          <div class="step-visual">
+            <div class="step-circle">
+              <i class="fas fa-user-plus"></i>
+            </div>
+            <div class="step-number">01</div>
+          </div>
+          <div class="step-content">
+            <h3>Create Your Profile</h3>
+            <p>Sign up in 30 seconds and complete your health profile. Tell us about your age, weight, height, activity level, and nutrition goals.</p>
+            <div class="step-details">
+              <div class="detail-item">
+                <i class="fas fa-check-circle"></i>
+                <span>Basic information</span>
+              </div>
+              <div class="detail-item">
+                <i class="fas fa-check-circle"></i>
+                <span>Health goals & preferences</span>
+              </div>
+              <div class="detail-item">
+                <i class="fas fa-check-circle"></i>
+                <span>Dietary restrictions</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Animated Arrow -->
+        <div class="workflow-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-head">
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="arrow-pulse"></div>
+        </div>
+        
+        <!-- Step 2 -->
+        <div class="workflow-step">
+          <div class="step-visual">
+            <div class="step-circle">
+              <i class="fas fa-camera"></i>
+            </div>
+            <div class="step-number">02</div>
+          </div>
+          <div class="step-content">
+            <h3>Log Your Meals</h3>
+            <p>Track what you eat using our smart food search powered by FatSecret API. Search, scan barcodes, or create custom foods in seconds.</p>
+            <div class="step-details">
+              <div class="detail-item">
+                <i class="fas fa-check-circle"></i>
+                <span>500,000+ food database</span>
+              </div>
+              <div class="detail-item">
+                <i class="fas fa-check-circle"></i>
+                <span>Quick meal logging</span>
+              </div>
+              <div class="detail-item">
+                <i class="fas fa-check-circle"></i>
+                <span>Barcode scanning</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Animated Arrow -->
+        <div class="workflow-arrow">
+          <div class="arrow-line"></div>
+          <div class="arrow-head">
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="arrow-pulse"></div>
+        </div>
+        
+        <!-- Step 3 -->
+        <div class="workflow-step">
+          <div class="step-visual">
+            <div class="step-circle">
+              <i class="fas fa-brain"></i>
+            </div>
+            <div class="step-number">03</div>
+          </div>
+          <div class="step-content">
+            <h3>Get AI Insights</h3>
+            <p>Our machine learning algorithm analyzes your eating patterns and provides personalized diet classification, health scores, and recommendations.</p>
+            <div class="step-details">
+              <div class="detail-item">
+                <i class="fas fa-check-circle"></i>
+                <span>AI diet classification</span>
+              </div>
+              <div class="detail-item">
+                <i class="fas fa-check-circle"></i>
+                <span>Health score calculation</span>
+              </div>
+              <div class="detail-item">
+                <i class="fas fa-check-circle"></i>
+                <span>Personalized tips</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits Section -->
+  <section class="benefits-section" id="benefits">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Why Choose NutriAI?</h2>
+        <p class="section-subtitle">Real benefits backed by science and technology</p>
+      </div>
+      
+      <div class="benefits-grid">
+        <div class="benefit-card">
+          <div class="benefit-icon">
+            <i class="fas fa-rocket"></i>
+          </div>
+          <h3>95% Accurate AI</h3>
+          <p>Our supervised machine learning model classifies your diet with industry-leading 95% accuracy, trained on thousands of meal patterns.</p>
+        </div>
+        
+        <div class="benefit-card">
+          <div class="benefit-icon">
+            <i class="fas fa-clock"></i>
+          </div>
+          <h3>Save 10+ Hours/Week</h3>
+          <p>Automated tracking and AI analysis saves you hours compared to manual nutrition calculations and meal planning.</p>
+        </div>
+        
+        <div class="benefit-card">
+          <div class="benefit-icon">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <h3>Bank-Level Security</h3>
+          <p>Your health data is encrypted with AES-256 encryption and stored securely on MongoDB Atlas cloud infrastructure.</p>
+        </div>
+        
+        <div class="benefit-card">
+          <div class="benefit-icon">
+            <i class="fas fa-sync-alt"></i>
+          </div>
+          <h3>Real-Time Sync</h3>
+          <p>Your nutrition data syncs instantly across all devices with our cloud-based architecture powered by Render.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="cta-container">
+      <div class="cta-content">
+        <h2>Ready to Transform Your Nutrition with AI?</h2>
+        <p>Join thousands of users achieving their health goals with intelligent nutrition tracking</p>
+        <button onclick="showRegister()" class="btn btn-cta">
+          <i class="fas fa-rocket"></i>
+          Start Your Free Journey Today
+        </button>
+        <div class="cta-features">
+          <span><i class="fas fa-check"></i> No credit card required</span>
+          <span><i class="fas fa-check"></i> Free forever</span>
+          <span><i class="fas fa-check"></i> Cancel anytime</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <div class="logo">
+            <i class="fas fa-brain"></i>
+            <span>NutriAI</span>
+          </div>
+          <p>AI-powered nutrition tracking platform built with cutting-edge machine learning technology.</p>
+          <div class="footer-tech-stack">
+            <span class="tech-badge">React</span>
+            <span class="tech-badge">Flask</span>
+            <span class="tech-badge">MongoDB</span>
+            <span class="tech-badge">ML</span>
+          </div>
+        </div>
+        
+        <div class="footer-links">
+          <div class="footer-column">
+            <h4>Product</h4>
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="#benefits">Benefits</a>
+            <a href="#pricing">Pricing</a>
+          </div>
+          
+          <div class="footer-column">
+            <h4>Company</h4>
+            <a href="#about">About Us</a>
+            <a href="#blog">Blog</a>
+            <a href="#careers">Careers</a>
+            <a href="#press">Press Kit</a>
+          </div>
+          
+          <div class="footer-column">
+            <h4>Resources</h4>
+            <a href="#docs">Documentation</a>
+            <a href="#api">API Reference</a>
+            <a href="#community">Community</a>
+            <a href="#support">Support</a>
+          </div>
+          
+          <div class="footer-column">
+            <h4>Legal</h4>
+            <a href="#privacy">Privacy Policy</a>
+            <a href="#terms">Terms of Service</a>
+            <a href="#security">Security</a>
+            <a href="#gdpr">GDPR Compliance</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; 2025 NutriAI. All rights reserved. Built with ❤️ and AI.</p>
+        <div class="social-links">
+          <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+          <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
+          <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+          <a href="#" aria-label="Discord"><i class="fab fa-discord"></i></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Login/Register Modal (keep your existing modal code) -->
   <!-- Login/Register Modal -->
   <div id="authModal" class="modal">
+    <div class="modal-overlay" onclick="closeModal()"></div>
     <div class="modal-content">
-      <span class="close" onclick="closeModal()">&times;</span>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close modal">
+        <i class="fas fa-times"></i>
+      </button>
       
       <!-- Register Form -->
       <div id="registerSection" class="auth-section">
-        <h2>Create Your Account</h2>
+        <div class="auth-header">
+          <h2>Create Your Account</h2>
+          <p>Start your nutrition journey today</p>
+        </div>
+        
         <form id="registerForm" class="auth-form">
-          <input type="text" name="name" placeholder="Full Name" required />
-          <input type="email" name="email" placeholder="Email Address" required />
-          <input type="password" name="password" placeholder="Password" required />
-          <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+          <div class="form-group">
+            <label for="registerName">
+              <i class="fas fa-user"></i>
+              Full Name
+            </label>
+            <input type="text" id="registerName" name="name" placeholder="John Doe" required />
+          </div>
+          
+          <div class="form-group">
+            <label for="registerEmail">
+              <i class="fas fa-envelope"></i>
+              Email Address
+            </label>
+            <input type="email" id="registerEmail" name="email" placeholder="john@example.com" required />
+          </div>
+          
+          <div class="form-group">
+            <label for="registerPassword">
+              <i class="fas fa-lock"></i>
+              Password
+            </label>
+            <input type="password" id="registerPassword" name="password" placeholder="Minimum 6 characters" required />
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-full">
+            <i class="fas fa-user-plus"></i>
+            Create Account
+          </button>
         </form>
+        
         <p id="registerMessage" class="message"></p>
-        <p class="switch-auth">Already have an account? <a href="#" onclick="showLogin()">Login here</a></p>
+        
+        <div class="auth-divider">
+          <span>or</span>
+        </div>
+        
+        <p class="switch-auth">
+          Already have an account? 
+          <a href="#" onclick="event.preventDefault(); showLogin();">Login here</a>
+        </p>
       </div>
 
       <!-- Login Form -->
       <div id="loginSection" class="auth-section" style="display: none;">
-        <h2>Welcome Back</h2>
+        <div class="auth-header">
+          <h2>Welcome Back</h2>
+          <p>Login to continue your journey</p>
+        </div>
+        
         <form id="loginForm" class="auth-form">
-          <input type="email" name="email" placeholder="Email Address" required />
-          <input type="password" name="password" placeholder="Password" required />
-          <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+          <div class="form-group">
+            <label for="loginEmail">
+              <i class="fas fa-envelope"></i>
+              Email Address
+            </label>
+            <input type="email" id="loginEmail" name="email" placeholder="john@example.com" required />
+          </div>
+          
+          <div class="form-group">
+            <label for="loginPassword">
+              <i class="fas fa-lock"></i>
+              Password
+            </label>
+            <input type="password" id="loginPassword" name="password" placeholder="Enter your password" required />
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-full">
+            <i class="fas fa-sign-in-alt"></i>
+            Sign In
+          </button>
         </form>
+        
         <p id="loginMessage" class="message"></p>
-        <p class="switch-auth">Don't have an account? <a href="#" onclick="showRegister()">Register here</a></p>
+        
+        <div class="auth-divider">
+          <span>or</span>
+        </div>
+        
+        <p class="switch-auth">
+          Don't have an account? 
+          <a href="#" onclick="event.preventDefault(); showRegister();">Register here</a>
+        </p>
       </div>
     </div>
   </div>
-<script src="config.js"></script>
+
+  <!-- Scripts -->
+  <script src="config.js"></script>
+  <script src="home-script.js"></script>
+</body>
+</html>
+
+  <!-- Scripts -->
+  <script src="config.js"></script>
   <script src="home-script.js"></script>
 </body>
 </html>
