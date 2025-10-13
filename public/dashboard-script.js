@@ -975,3 +975,199 @@ window.onclick = function(event) {
     closeProfileModal();
   }
 }
+
+// ==================== LSTM FORECASTING ====================
+
+async function runLSTMForecast() {
+    const resultsContainer = document.getElementById('lstmForecastResults');
+    const button = document.getElementById('lstmForecastBtn');
+    const refreshBtn = document.getElementById('lstmRefreshBtn');
+    
+    if (!button || !resultsContainer) {
+        console.error('Required elements not found');
+        return;
+    }
+    
+    // Show loading state
+    button.disabled = true;
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Forecasting...';
+    
+    // Show results container with loading
+    resultsContainer.style.display = 'block';
+    resultsContainer.innerHTML = `
+        <div style="text-align: center; padding: 3rem;">
+            <div style="width: 60px; height: 60px; border: 4px solid var(--border); border-top: 4px solid var(--accent-tertiary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1.5rem;"></div>
+            <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">🔮 LSTM is analyzing your patterns...</h3>
+            <p style="color: var(--text-secondary);">Using deep learning to forecast next 7 days</p>
+        </div>
+    `;
+    
+    try {
+        const { response, result } = await makeApiCall('/ai/forecast-intake?days=7');
+        
+        if (response.ok && result.success) {
+            displayLSTMForecast(result);
+            
+            // Show refresh button
+            if (refreshBtn) {
+                refreshBtn.style.display = 'flex';
+            }
+        } else {
+            resultsContainer.innerHTML = `
+                <div style="padding: 2rem; text-align: center;">
+                    <div style="background: rgba(239, 68, 68, 0.1); padding: 2rem; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                        <h3 style="color: var(--accent-danger); margin-bottom: 1rem;">⚠️ ${result.error || 'Forecasting unavailable'}</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                            ${result.message || 'Not enough data to generate forecast'}
+                        </p>
+                        ${result.current_days !== undefined ? `
+                            <div style="margin: 1.5rem 0;">
+                                <div style="background: var(--bg-card); padding: 1rem; border-radius: 8px; display: inline-block;">
+                                    <strong style="color: var(--text-primary); font-size: 2rem;">${result.current_days}</strong>
+                                    <span style="color: var(--text-muted); display: block; font-size: 0.85rem;">days logged</span>
+                                </div>
+                                <span style="margin: 0 1rem; color: var(--text-muted);">→</span>
+                                <div style="background: var(--bg-card); padding: 1rem; border-radius: 8px; display: inline-block;">
+                                    <strong style="color: var(--accent-primary); font-size: 2rem;">${result.required_days}</strong>
+                                    <span style="color: var(--text-muted); display: block; font-size: 0.85rem;">days needed</span>
+                                </div>
+                            </div>
+                        ` : ''}
+                        <button onclick="showAddMealModal()" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Log More Meals
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('LSTM Forecast error:', error);
+        resultsContainer.innerHTML = `
+            <div style="padding: 2rem; text-align: center;">
+                <div style="background: rgba(239, 68, 68, 0.1); padding: 2rem; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                    <h3 style="color: var(--accent-danger); margin-bottom: 1rem;">❌ Connection Error</h3>
+                    <p style="color: var(--text-secondary);">Please check your internet connection and try again.</p>
+                    <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.5rem;">Error: ${error.message}</p>
+                </div>
+            </div>
+        `;
+    } finally {
+        button.disabled = false;
+        button.innerHTML = originalHTML;
+    }
+}
+
+function displayLSTMForecast(data) {
+    const resultsContainer = document.getElementById('lstmForecastResults');
+    
+    if (!resultsContainer) return;
+    
+    const { current_stats, forecasts, insights, analysis_period } = data;
+    
+    // Get trend icon and class
+    const trendClass = current_stats.trend;
+    const trendIcon = {
+        'increasing': '📈',
+        'decreasing': '📉',
+        'stable': '➡️'
+    }[trendClass] || '➡️';
+    
+    const html = `
+        <!-- Header -->
+        <div class="forecast-header">
+            <span class="model-badge">
+                <i class="fas fa-brain"></i> ${data.model}
+            </span>
+            <h3>${trendIcon} Next 7 Days Forecast</h3>
+        </div>
+        
+        <!-- Current Stats -->
+        <div class="forecast-stats-grid">
+            <div class="forecast-stat-box">
+                <h5>Average Daily</h5>
+                <div class="value">${current_stats.average_daily_calories}</div>
+                <div class="label">calories/day</div>
+            </div>
+            
+            <div class="forecast-stat-box" style="border-left-color: var(--accent-primary);">
+                <h5>Recent Trend</h5>
+                <div class="value">${current_stats.recent_average}</div>
+                <div class="label">last week avg</div>
+                <span class="forecast-trend-badge ${trendClass}">
+                    ${current_stats.trend}
+                </span>
+            </div>
+            
+            <div class="forecast-stat-box" style="border-left-color: var(--accent-secondary);">
+                <h5>Volatility</h5>
+                <div class="value">${current_stats.volatility_score}%</div>
+                <div class="label">variation</div>
+            </div>
+        </div>
+        
+        <!-- Forecast Table -->
+        <div class="forecast-chart-section">
+            <h4>📅 7-Day Calorie Forecast</h4>
+            <table class="forecast-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Day</th>
+                        <th>Predicted Calories</th>
+                        <th>Range</th>
+                        <th>Confidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${forecasts.map(forecast => `
+                        <tr>
+                            <td><strong>${new Date(forecast.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</strong></td>
+                            <td>${forecast.day_name}</td>
+                            <td><strong style="color: var(--accent-primary); font-size: 1.1rem;">${forecast.predicted_calories}</strong> cal</td>
+                            <td style="font-size: 0.85rem; color: var(--text-muted);">
+                                ${forecast.range.lower} - ${forecast.range.upper}
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div class="confidence-bar" style="flex: 1;">
+                                        <div class="confidence-fill" style="width: ${forecast.confidence}%;"></div>
+                                    </div>
+                                    <span style="font-weight: 700; font-size: 0.85rem;">${forecast.confidence}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Insights -->
+        <div class="forecast-insights">
+            <h4>💡 AI-Powered Insights</h4>
+            ${insights.map(insight => `
+                <div class="insight-item">
+                    <span class="insight-icon">${insight.icon}</span>
+                    <div class="insight-content">
+                        <h5>${insight.title}</h5>
+                        <p>${insight.message}</p>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+        
+        <!-- Timestamp -->
+        <div class="forecast-timestamp">
+            🕐 Forecast generated: ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} | 
+            Analyzed ${analysis_period.days_analyzed} days of data
+        </div>
+    `;
+    
+    resultsContainer.innerHTML = html;
+    resultsContainer.style.display = 'block';
+    
+    // Smooth scroll
+    setTimeout(() => {
+        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+}

@@ -1,19 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard - NutriAI</title>
-  
+
   <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
+
   <!-- Custom CSS -->
   <link rel="stylesheet" href="dashboard-style.css" />
 </head>
@@ -101,7 +103,7 @@
         </div>
 
         <div class="ai-models-grid">
-          
+
           <!-- MODEL 1: Diet Classification (Active) -->
           <div class="ai-model-card">
             <div class="ai-model-header">
@@ -109,18 +111,19 @@
               <h3>Diet Classification</h3>
               <span class="ai-model-badge">Active • ML Powered</span>
             </div>
-            
+
             <p class="ai-model-description">
-              Supervised machine learning analyzes your last 5 meals to classify your diet type with 95% accuracy. Get instant insights into your eating patterns.
+              Supervised machine learning analyzes your last 5 meals to classify your diet type with 95% accuracy. Get
+              instant insights into your eating patterns.
             </p>
-            
+
             <ul class="ai-model-features">
               <li><i class="fas fa-check-circle"></i> Analyzes last 5 meals</li>
               <li><i class="fas fa-check-circle"></i> 95% classification accuracy</li>
               <li><i class="fas fa-check-circle"></i> Real-time health score</li>
               <li><i class="fas fa-check-circle"></i> Personalized recommendations</li>
             </ul>
-            
+
             <div class="ai-model-actions">
               <button id="aiAnalyzeBtn" onclick="runDietClassification()" class="ai-analyze-btn">
                 <i class="fas fa-brain"></i> Analyze My Diet
@@ -132,97 +135,120 @@
           </div>
 
           <!-- MODEL 2: Meal Recommendations (Coming Soon) -->
-          <div class="ai-model-card coming-soon">
+
+
+          <!-- MODEL 2: LSTM Forecasting -->
+          <div class="ai-model-card">
             <div class="ai-model-header">
-              <div class="ai-model-icon">🍲</div>
-              <h3>Smart Meal Recommender</h3>
-              <span class="ai-model-badge coming-soon-badge">Coming Soon</span>
+              <div class="ai-model-icon">🔮</div>
+              <div>
+                <h3>LSTM Intake Forecasting</h3>
+                <span class="ai-model-badge">Active • Deep Learning</span>
+              </div>
             </div>
-            
+
             <p class="ai-model-description">
-              AI-powered meal suggestions based on your preferences, dietary restrictions, and nutritional goals. Personalized recipes just for you.
+              Deep Learning LSTM model predicts your calorie intake for the next 7 days based on historical eating
+              patterns.
             </p>
-            
+
             <ul class="ai-model-features">
-              <li><i class="fas fa-clock"></i> 10,000+ recipe database</li>
-              <li><i class="fas fa-clock"></i> Custom meal plans</li>
-              <li><i class="fas fa-clock"></i> Ingredient substitutions</li>
-              <li><i class="fas fa-clock"></i> Shopping list generator</li>
+              <li><i class="fas fa-check-circle"></i> 7-day calorie forecast</li>
+              <li><i class="fas fa-check-circle"></i> Trend detection & analysis</li>
+              <li><i class="fas fa-check-circle"></i> Confidence intervals</li>
+              <li><i class="fas fa-check-circle"></i> AI-powered insights</li>
             </ul>
-            
-            <div class="coming-soon-label">
-              <h4>🚧 Under Development</h4>
-              <p>Expected Launch: Q2 2025</p>
+
+            <div class="ai-model-actions">
+              <button id="lstmForecastBtn" onclick="runLSTMForecast()" class="ai-analyze-btn">
+                <i class="fas fa-chart-line"></i> Forecast My Intake
+              </button>
+              <button id="lstmRefreshBtn" onclick="runLSTMForecast()" class="ai-refresh-btn" style="display: none;">
+                <i class="fas fa-sync-alt"></i>
+              </button>
             </div>
           </div>
 
-          <!-- MODEL 3: Nutrient Gap Analyzer (Coming Soon) -->
-          <div class="ai-model-card coming-soon">
-            <div class="ai-model-header">
-              <div class="ai-model-icon">📊</div>
-              <h3>Nutrient Gap Analyzer</h3>
-              <span class="ai-model-badge coming-soon-badge">Coming Soon</span>
-            </div>
-            
-            <p class="ai-model-description">
-              Deep learning model identifies vitamin and mineral deficiencies in your diet. Provides actionable insights to optimize nutrition.
-            </p>
-            
-            <ul class="ai-model-features">
-              <li><i class="fas fa-clock"></i> 30+ micronutrient tracking</li>
-              <li><i class="fas fa-clock"></i> Deficiency alerts</li>
-              <li><i class="fas fa-clock"></i> Food source suggestions</li>
-              <li><i class="fas fa-clock"></i> Weekly reports</li>
-            </ul>
-            
-            <div class="coming-soon-label">
-              <h4>🚧 Under Development</h4>
-              <p>Expected Launch: Q3 2025</p>
-            </div>
-          </div>
+          <!-- Other coming soon models -->
 
-          <!-- MODEL 4: Calorie Burn Predictor (Coming Soon) -->
-          <div class="ai-model-card coming-soon">
-            <div class="ai-model-header">
-              <div class="ai-model-icon">🏃</div>
-              <h3>Activity Impact Predictor</h3>
-              <span class="ai-model-badge coming-soon-badge">Coming Soon</span>
-            </div>
-            
-            <p class="ai-model-description">
-              Neural network predicts calorie burn based on your activity level, metabolism, and lifestyle factors. Smart TDEE calculation.
-            </p>
-            
-            <ul class="ai-model-features">
-              <li><i class="fas fa-clock"></i> Activity tracking integration</li>
-              <li><i class="fas fa-clock"></i> Metabolism analysis</li>
-              <li><i class="fas fa-clock"></i> Workout recommendations</li>
-              <li><i class="fas fa-clock"></i> Progress predictions</li>
-            </ul>
-            
-            <div class="coming-soon-label">
-              <h4>🚧 Under Development</h4>
-              <p>Expected Launch: Q4 2025</p>
-            </div>
-          </div>
+        </div> <!-- End of ai-models-grid -->
 
-        </div>
-
-        <!-- AI Results Display -->
+        <!-- IMPORTANT: ADD THESE RESULT CONTAINERS -->
+        <div id="lstmForecastResults" style="display: none;"></div>
         <div id="aiClassificationResults"></div>
+
       </section>
 
-      <!-- Recent Meals -->
-      <div class="recent-section">
-        <h2>📝 Today's Meals</h2>
-        <div id="recentMeals" class="meals-list">
-          <div class="empty-state">
-            <p>No meals logged today. Start by adding your first meal!</p>
-          </div>
+      <!-- MODEL 3: Nutrient Gap Analyzer (Coming Soon) -->
+      <div class="ai-model-card coming-soon">
+        <div class="ai-model-header">
+          <div class="ai-model-icon">📊</div>
+          <h3>Nutrient Gap Analyzer</h3>
+          <span class="ai-model-badge coming-soon-badge">Coming Soon</span>
+        </div>
+
+        <p class="ai-model-description">
+          Deep learning model identifies vitamin and mineral deficiencies in your diet. Provides actionable insights
+          to optimize nutrition.
+        </p>
+
+        <ul class="ai-model-features">
+          <li><i class="fas fa-clock"></i> 30+ micronutrient tracking</li>
+          <li><i class="fas fa-clock"></i> Deficiency alerts</li>
+          <li><i class="fas fa-clock"></i> Food source suggestions</li>
+          <li><i class="fas fa-clock"></i> Weekly reports</li>
+        </ul>
+
+        <div class="coming-soon-label">
+          <h4>🚧 Under Development</h4>
+          <p>Expected Launch: Q3 2025</p>
+        </div>
+      </div>
+
+      <!-- MODEL 4: Calorie Burn Predictor (Coming Soon) -->
+      <div class="ai-model-card coming-soon">
+        <div class="ai-model-header">
+          <div class="ai-model-icon">🏃</div>
+          <h3>Activity Impact Predictor</h3>
+          <span class="ai-model-badge coming-soon-badge">Coming Soon</span>
+        </div>
+
+        <p class="ai-model-description">
+          Neural network predicts calorie burn based on your activity level, metabolism, and lifestyle factors.
+          Smart TDEE calculation.
+        </p>
+
+        <ul class="ai-model-features">
+          <li><i class="fas fa-clock"></i> Activity tracking integration</li>
+          <li><i class="fas fa-clock"></i> Metabolism analysis</li>
+          <li><i class="fas fa-clock"></i> Workout recommendations</li>
+          <li><i class="fas fa-clock"></i> Progress predictions</li>
+        </ul>
+
+        <div class="coming-soon-label">
+          <h4>🚧 Under Development</h4>
+          <p>Expected Launch: Q4 2025</p>
         </div>
       </div>
 
     </div>
+
+
+    <!-- AI Results Display -->
+    <div id="aiClassificationResults"></div>
+    </section>
+
+    <!-- Recent Meals -->
+    <div class="recent-section">
+      <h2>📝 Today's Meals</h2>
+      <div id="recentMeals" class="meals-list">
+        <div class="empty-state">
+          <p>No meals logged today. Start by adding your first meal!</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
   </div>
 
   <!-- Add Meal Modal -->
@@ -400,7 +426,8 @@
             </div>
             <div class="form-group">
               <label>Target Weight (kg):</label>
-              <input type="number" name="targetWeight" id="targetWeight" placeholder="65" min="30" max="300" step="0.1" />
+              <input type="number" name="targetWeight" id="targetWeight" placeholder="65" min="30" max="300"
+                step="0.1" />
             </div>
           </div>
 
@@ -478,4 +505,5 @@
   <script src="config.js"></script>
   <script src="dashboard-script.js"></script>
 </body>
+
 </html>

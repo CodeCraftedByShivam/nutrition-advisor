@@ -16,6 +16,9 @@ from flask_cors import CORS
 import requests
 from requests_oauthlib import OAuth1
 
+# Import LSTM Forecaster
+from lstm_forecaster import NutritionLSTMForecaster
+
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "your_super_secret_key")
@@ -73,18 +76,16 @@ def token_required(f):
             if auth_header.startswith("Bearer "):
                 token = auth_header[len("Bearer "):]
             else:
-                token = auth_header  # Support tokens without "Bearer " prefix
+                token = auth_header
 
         if not token:
             print("❌ Token missing from request")
             return jsonify({"error": "Token is missing!"}), 401
 
         try:
-            # Decode JWT token
             data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             print(f"✅ Token decoded successfully for user: {data.get('user_id')}")
             
-            # Get user from database
             current_user = users_collection.find_one({"_id": ObjectId(data["user_id"])})
             
             if not current_user:
@@ -93,7 +94,6 @@ def token_required(f):
             
             print(f"✅ User authenticated: {current_user.get('email')}")
             
-            # FIXED: Pass current_user as first positional argument
             return f(current_user, *args, **kwargs)
             
         except jwt.ExpiredSignatureError:
@@ -115,6 +115,11 @@ def home():
         "message": "Nutrition Advisor API is running!",
         "status": "healthy",
         "database": "connected" if users_collection is not None else "not connected",
+        "ai_features": {
+            "diet_classification": True,
+            "lstm_forecasting": True,
+            "clustering": "coming_soon"
+        },
         "environment": {
             "SECRET_KEY": bool(SECRET_KEY),
             "MONGO_URI": bool(MONGO_URI),
@@ -126,7 +131,7 @@ def home():
 def ping():
     return jsonify({"message": "pong", "timestamp": datetime.now(timezone.utc).isoformat()})
 
-# Auth Routes
+# Auth Routes [KEEPING ALL YOUR EXISTING AUTH ROUTES]
 @app.route("/register", methods=["POST", "OPTIONS"])
 def register():
     if request.method == "OPTIONS":
@@ -202,7 +207,8 @@ def login():
     except Exception as e:
         return jsonify({"error": "Login failed", "details": str(e)}), 500
 
-# User CRUD Routes
+# [KEEPING ALL YOUR EXISTING USER CRUD ROUTES - No changes]
+
 @app.route("/user/create", methods=["POST"])
 @token_required
 def create_user(current_user):
@@ -290,7 +296,8 @@ def delete_user(current_user, id):
     except Exception as e:
         return jsonify({"error": "Delete failed", "details": str(e)}), 400
 
-# Meal Routes
+# [KEEPING ALL YOUR MEAL ROUTES - No changes needed]
+
 @app.route("/meal/add", methods=["POST"])
 @token_required
 def add_meal(current_user):
@@ -418,7 +425,8 @@ def get_meal_stats(current_user):
     except Exception as e:
         return jsonify({"error": "Failed to fetch stats", "details": str(e)}), 500
 
-# Food Search Routes
+# [KEEPING ALL YOUR FOOD API ROUTES]
+
 @app.route("/food/search", methods=["GET"])
 @token_required
 def search_food(current_user):
@@ -584,7 +592,8 @@ def get_nutrition_analysis(current_user):
     except Exception as e:
         return jsonify({"error": "Failed to get analysis", "details": str(e)}), 500
 
-# Profile Routes
+# [KEEPING ALL YOUR PROFILE ROUTES]
+
 @app.route("/profile", methods=["GET"])
 @token_required
 def get_profile(current_user):
@@ -703,7 +712,6 @@ def diet_classification(current_user):
         
     try:
         meals_collection = db["meals"]
-        # CHANGED: Now analyzes last 5 meals instead of 100
         user_meals = list(meals_collection.find({
             "user_id": str(current_user["_id"])
         }).limit(5).sort("created_at", -1))
@@ -716,18 +724,15 @@ def diet_classification(current_user):
                 "current_meals": len(user_meals)
             }), 400
         
-        # Extract features
         total_calories = sum(meal.get('calories', 0) for meal in user_meals)
         total_protein = sum(meal.get('protein', 0) for meal in user_meals)
         total_carbs = sum(meal.get('carbs', 0) for meal in user_meals)
         total_fat = sum(meal.get('fat', 0) for meal in user_meals)
         
-        # Calculate ratios
         protein_ratio = (total_protein * 4) / max(total_calories, 1)
         carbs_ratio = (total_carbs * 4) / max(total_calories, 1)
         fat_ratio = (total_fat * 9) / max(total_calories, 1)
         
-        # Classification logic
         diet_class = None
         confidence = 0.0
         
@@ -750,10 +755,8 @@ def diet_classification(current_user):
             diet_class = "Custom Diet Pattern"
             confidence = 0.70
         
-        # Calculate health score
         health_score = 50
         
-        # Reward balanced meals
         if 0.15 <= protein_ratio <= 0.30:
             health_score += 15
         if 0.40 <= carbs_ratio <= 0.65:
@@ -761,7 +764,6 @@ def diet_classification(current_user):
         if 0.20 <= fat_ratio <= 0.35:
             health_score += 10
         
-        # Reward consistent meal logging
         if len(user_meals) >= 5:
             health_score += 10
         
@@ -788,12 +790,10 @@ def diet_classification(current_user):
         print(f"❌ Classification error: {str(e)}")
         return jsonify({"error": f"Classification failed: {str(e)}"}), 500
 
-
 def generate_diet_recommendations(diet_class, protein_ratio, carbs_ratio, fat_ratio):
     """Generate AI-powered recommendations"""
     recommendations = []
     
-    # Diet-specific recommendations
     if diet_class == "High Protein Diet":
         recommendations.append("💪 Great protein intake! Stay hydrated and include fiber-rich foods.")
     elif diet_class == "Ketogenic Diet":
@@ -807,7 +807,6 @@ def generate_diet_recommendations(diet_class, protein_ratio, carbs_ratio, fat_ra
     else:
         recommendations.append("🔄 Custom pattern detected! Track consistency for better insights.")
     
-    # Macro-specific recommendations
     if protein_ratio < 0.15:
         recommendations.append("🥩 Increase protein for muscle health and satiety.")
     elif protein_ratio > 0.35:
@@ -825,8 +824,115 @@ def generate_diet_recommendations(diet_class, protein_ratio, carbs_ratio, fat_ra
         
     return recommendations
 
+# ==================== NEW: LSTM FORECASTING ENDPOINT ====================
+
+def get_user_historical_data(user_id, days=30):
+    """
+    Fetch user's historical calorie data from database
+    """
+    if db is None:
+        return []
+        
+    try:
+        meals_collection = db["meals"]
+        
+        end_date = datetime.now(timezone.utc)
+        start_date = end_date - timedelta(days=days)
+        
+        # Aggregate daily calories
+        pipeline = [
+            {
+                '$match': {
+                    'user_id': str(user_id),
+                    'created_at': {'$gte': start_date, '$lte': end_date}
+                }
+            },
+            {
+                '$group': {
+                    '_id': {'$dateToString': {'format': '%Y-%m-%d', 'date': '$created_at'}},
+                    'total_calories': {'$sum': '$calories'}
+                }
+            },
+            {
+                '$sort': {'_id': 1}
+            }
+        ]
+        
+        results = list(meals_collection.aggregate(pipeline))
+        
+        historical_data = [
+            {
+                'date': result['_id'],
+                'calories': result['total_calories']
+            }
+            for result in results
+        ]
+        
+        return historical_data
+        
+    except Exception as e:
+        print(f"Error fetching historical data: {e}")
+        return []
+
+@app.route("/ai/forecast-intake", methods=["GET"])
+@token_required
+def forecast_calorie_intake(current_user):
+    """
+    LSTM-Based Nutritional Intake Forecasting
+    
+    Query Parameters:
+        days (optional): Number of days to forecast (default: 7, max: 14)
+    """
+    print(f"🔮 LSTM Forecast requested by user: {current_user.get('email')}")
+    
+    if db is None:
+        return jsonify({"error": "Database not available"}), 500
+        
+    try:
+        # Get forecast days from query params
+        forecast_days = int(request.args.get('days', 7))
+        forecast_days = min(forecast_days, 14)  # Max 14 days
+        
+        # Fetch historical data (last 30 days)
+        user_id = current_user["_id"]
+        historical_data = get_user_historical_data(user_id, days=30)
+        
+        print(f"📊 Found {len(historical_data)} days of historical data")
+        
+        # Check if user has enough data
+        if len(historical_data) < 7:
+            return jsonify({
+                'success': False,
+                'error': 'Insufficient data for forecasting',
+                'message': f'You need at least 7 days of meal data. Currently you have {len(historical_data)} days.',
+                'current_days': len(historical_data),
+                'required_days': 7,
+                'suggestion': 'Keep logging your meals for a few more days to unlock AI forecasting!'
+            }), 400
+        
+        # Initialize forecaster
+        forecaster = NutritionLSTMForecaster(sequence_length=14)
+        
+        # Generate forecast
+        result = forecaster.forecast(historical_data, forecast_days=forecast_days)
+        
+        if not result['success']:
+            return jsonify(result), 400
+        
+        print(f"✅ Forecast generated successfully for {forecast_days} days")
+        return jsonify(result), 200
+        
+    except Exception as e:
+        print(f"❌ Forecasting error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Forecasting failed',
+            'message': str(e)
+        }), 500
+
 # Run the app
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print(f"🚀 Starting server on port {port}")
+    print(f"🤖 AI Features: Diet Classification ✅ | LSTM Forecasting ✅")
     app.run(host="0.0.0.0", port=port, debug=False)
