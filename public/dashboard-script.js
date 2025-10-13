@@ -37,109 +37,6 @@ async function makeApiCall(endpoint, method = 'GET', data = null, showLoading = 
     }
 
     const response = await fetch(`${API_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`, options);
-    const result = await response.json();
-
-    if (loadingElement) {
-      loadingElement.style.display = 'none';
-    }
-
-    if (DEBUG_MODE) {
-      console.log(`API Call ${method} ${endpoint}:`, { response: response.status, result });
-    }
-
-    return { response, result };
-  } catch (error) {
-    if (loadingElement) {
-      loadingElement.style.display = 'none';
-    }
-
-    if (DEBUG_MODE) {
-      console.error(`API Error ${method} ${endpoint}:`, error);
-    }
-
-    throw error;
-  }
-}
-
-// Initialize dashboard - UPDATED to use enhanced stats loading
-document.addEventListener('DOMContentLoaded', () => {
-  loadUserInfo();
-  loadMealStatsWithGoals(); // CHANGED: Now uses personalized goals
-  loadTodaysMeals();
-  setupFoodSearch();
-  
-  if (DEBUG_MODE) {
-    console.log('🏠 Dashboard loaded in', typeof CONFIG !== 'undefined' ? CONFIG.ENVIRONMENT : 'production', 'mode');
-    console.log('🔗 API endpoint:', API_URL);
-  }
-});
-
-// Load user info
-async function loadUserInfo() {
-  try {
-    const userPrefs = localStorage.getItem(typeof CONFIG !== 'undefined' ? CONFIG.STORAGE_KEYS.USER_PREFERENCES : 'user_prefs');
-    if (userPrefs) {
-      const user = JSON.parse(userPrefs);
-      document.getElementById('welcomeText').textContent = `Welcome back, ${user.name}!`;
-    } else {
-      document.getElementById('welcomeText').textContent = 'Welcome back!';
-    }
-  } catch (error) {
-    document.getElementById('welcomeText').textContent = 'Welcome back!';
-  }
-}
-
-// Load meal statistics from backend
-async function loadMealStats() {
-  try {
-    const { response, result } = await makeApiCall('/meals/stats');
-    
-    if (response.ok) {
-      document.getElementById('caloriesCount').textContent = result.total_calories;
-      document.getElementById('mealsCount').textContent = result.meals_count;
-      document.getElementById('goalProgress').textContent = result.goal_progress + '%';
-      document.getElementById('streakCount').textContent = result.streak;
-    }
-  } catch (error) {
-    console.error('Error loading stats:', error);
-  }
-}
-
-// Load today's meals from backend
-async function loadTodaysMeals() {
-  try {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const { response, result } = await makeApiCall(`/meals?date=${today}`);
-    
-    if (response.ok) {
-      displayMeals(result);
-    }
-  } catch (error) {
-    console.error('Error loading meals:', error);
-  }
-}
-// Enhanced makeApiCall with auto-logout on 401
-async function makeApiCall(endpoint, method = 'GET', data = null, showLoading = false) {
-  const loadingElement = showLoading ? document.querySelector('.loading') : null;
-  
-  if (loadingElement) {
-    loadingElement.style.display = 'block';
-  }
-
-  try {
-    const options = {
-      method: method,
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json'
-      }
-    };
-
-    if (data) {
-      options.body = JSON.stringify(data);
-    }
-
-    const response = await fetch(`${API_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`, options);
     
     // Handle 401 - Token expired
     if (response.status === 401) {
@@ -173,73 +70,118 @@ async function makeApiCall(endpoint, method = 'GET', data = null, showLoading = 
   }
 }
 
+// Initialize dashboard - UPDATED to use enhanced stats loading
+document.addEventListener('DOMContentLoaded', () => {
+  loadUserInfo();
+  loadMealStatsWithGoals();
+  loadTodaysMeals();
+  setupFoodSearch();
+  
+  if (DEBUG_MODE) {
+    console.log('🏠 Dashboard loaded in', typeof CONFIG !== 'undefined' ? CONFIG.ENVIRONMENT : 'production', 'mode');
+    console.log('🔗 API endpoint:', API_URL);
+  }
+});
 
+// Load user info
+async function loadUserInfo() {
+  try {
+    const userPrefs = localStorage.getItem(typeof CONFIG !== 'undefined' ? CONFIG.STORAGE_KEYS.USER_PREFERENCES : 'user_prefs');
+    if (userPrefs) {
+      const user = JSON.parse(userPrefs);
+      document.getElementById('welcomeText').textContent = `Welcome back, ${user.name}!`;
+    } else {
+      document.getElementById('welcomeText').textContent = 'Welcome back!';
+    }
+  } catch (error) {
+    document.getElementById('welcomeText').textContent = 'Welcome back!';
+  }
+}
 
-// ==================== AI DIET CLASSIFICATION ====================
+// Load today's meals from backend
+async function loadTodaysMeals() {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const { response, result } = await makeApiCall(`/meals?date=${today}`);
+    
+    if (response.ok) {
+      displayMeals(result);
+    }
+  } catch (error) {
+    console.error('Error loading meals:', error);
+  }
+}
+
+// ==================== AI DIET CLASSIFICATION (UPDATED) ====================
 
 async function runDietClassification() {
     const resultsContainer = document.getElementById('aiClassificationResults');
+    const button = document.getElementById('aiAnalyzeBtn');
+    const refreshBtn = document.getElementById('aiRefreshBtn');
     
-    // Get button dynamically
-    const button = document.querySelector('button[onclick="runDietClassification()"]');
-    
-    if (!button) {
-        console.error('Button not found');
+    if (!button || !resultsContainer) {
+        console.error('Required elements not found');
         return;
     }
     
     // Show loading state
     button.disabled = true;
     const originalHTML = button.innerHTML;
-    button.innerHTML = '<div style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 10px;"></div> Analyzing...';
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
     
-    // Show results container
-    if (resultsContainer) {
-        resultsContainer.style.display = 'block';
-        resultsContainer.innerHTML = `
-            <div style="text-align: center; padding: 40px;">
-                <div style="border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-                <h3 style="color: #667eea;">🧠 AI is analyzing your diet patterns...</h3>
-                <p style="color: #666;">Using supervised machine learning algorithms</p>
-            </div>
-        `;
-    }
+    // Show results container with loading
+    resultsContainer.style.display = 'block';
+    resultsContainer.innerHTML = `
+        <div style="text-align: center; padding: 3rem;">
+            <div style="width: 60px; height: 60px; border: 4px solid var(--border); border-top: 4px solid var(--accent-primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1.5rem;"></div>
+            <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">🧠 AI is analyzing your diet patterns...</h3>
+            <p style="color: var(--text-secondary);">Using supervised machine learning algorithms</p>
+        </div>
+    `;
     
     try {
         const { response, result } = await makeApiCall('/ai/diet-classification');
         
         if (response.ok) {
             displayDietClassification(result);
+            
+            // Show refresh button after successful analysis
+            if (refreshBtn) {
+                refreshBtn.style.display = 'flex';
+            }
         } else {
-            if (resultsContainer) {
-                resultsContainer.innerHTML = `
-                    <div style="background: #fff3cd; padding: 30px; border-radius: 10px; text-align: center;">
-                        <h3 style="color: #856404;">⚠️ ${result.error || 'Analysis failed'}</h3>
-                        <p style="color: #856404;">${result.current_meals ? `You have ${result.current_meals} meals logged. Need at least 5 meals for AI analysis.` : 'Please log more meals and try again.'}</p>
-                        <button onclick="showAddMealModal()" style="margin-top: 15px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                            Add More Meals
+            resultsContainer.innerHTML = `
+                <div style="padding: 2rem; text-align: center;">
+                    <div style="background: rgba(239, 68, 68, 0.1); padding: 2rem; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                        <h3 style="color: var(--accent-danger); margin-bottom: 1rem;">⚠️ ${result.error || 'Analysis failed'}</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                            ${result.current_meals ? `You have ${result.current_meals} meals logged. Need at least 5 meals for AI analysis.` : 'Please log more meals and try again.'}
+                        </p>
+                        <button onclick="showAddMealModal()" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add More Meals
                         </button>
                     </div>
-                `;
-            }
-        }
-    } catch (error) {
-        console.error('AI Classification error:', error);
-        if (resultsContainer) {
-            resultsContainer.innerHTML = `
-                <div style="background: #f8d7da; padding: 30px; border-radius: 10px; text-align: center;">
-                    <h3 style="color: #721c24;">❌ Connection Error</h3>
-                    <p style="color: #721c24;">Please check your internet connection and try again.</p>
-                    <p style="color: #721c24; font-size: 12px; margin-top: 10px;">Error: ${error.message}</p>
                 </div>
             `;
         }
+    } catch (error) {
+        console.error('AI Classification error:', error);
+        resultsContainer.innerHTML = `
+            <div style="padding: 2rem; text-align: center;">
+                <div style="background: rgba(239, 68, 68, 0.1); padding: 2rem; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                    <h3 style="color: var(--accent-danger); margin-bottom: 1rem;">❌ Connection Error</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Please check your internet connection and try again.</p>
+                    <p style="color: var(--text-muted); font-size: 0.8rem;">Error: ${error.message}</p>
+                </div>
+            </div>
+        `;
     } finally {
-        // Reset button
         button.disabled = false;
         button.innerHTML = originalHTML;
     }
 }
+
+// ==================== DISPLAY AI RESULTS (NEW PROFESSIONAL LAYOUT) ====================
 
 function displayDietClassification(data) {
     const resultsContainer = document.getElementById('aiClassificationResults');
@@ -247,80 +189,84 @@ function displayDietClassification(data) {
     if (!resultsContainer) return;
     
     const html = `
-        <div style="padding: 25px; background: white; border-radius: 15px;">
-            <!-- Algorithm Badge -->
-            <div style="text-align: center; margin-bottom: 20px;">
-                <span style="background: #667eea; color: white; padding: 8px 20px; border-radius: 20px; font-weight: 600;">
-                    📊 ${data.algorithm}
-                </span>
-            </div>
-            
-            <!-- Diet Type Display -->
-            <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; color: white; margin-bottom: 25px;">
-                <h3 style="font-size: 32px; margin-bottom: 10px;">🎯 ${data.classification.diet_type}</h3>
-                <div style="display: inline-block; background: rgba(255, 255, 255, 0.3); padding: 8px 20px; border-radius: 25px; font-size: 18px; font-weight: 600;">
-                    ${data.classification.confidence}% Confidence
-                </div>
-            </div>
-            
-            <!-- Health Score -->
-            <div style="text-align: center; margin: 25px 0;">
-                <h4 style="color: #667eea; margin-bottom: 15px;">Your Health Score</h4>
-                <div style="position: relative; width: 150px; height: 150px; margin: 0 auto;">
-                    <svg width="150" height="150" style="transform: rotate(-90deg);">
-                        <circle cx="75" cy="75" r="60" stroke="#e0e0e0" stroke-width="12" fill="none" />
+        <!-- Header Section -->
+        <div class="ai-result-header">
+            <span class="algorithm-badge">
+                <i class="fas fa-brain"></i> ${data.algorithm}
+            </span>
+            <h3>🎯 ${data.classification.diet_type}</h3>
+            <span class="confidence-badge">
+                ${data.classification.confidence}% Confidence
+            </span>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="ai-result-content">
+            <!-- Left: Health Score -->
+            <div class="ai-health-score">
+                <h4>Your Health Score</h4>
+                <div class="score-circle-container">
+                    <svg width="150" height="150">
+                        <circle cx="75" cy="75" r="60" stroke="#e5e7eb" stroke-width="10" fill="none" />
                         <circle cx="75" cy="75" r="60" 
-                                stroke="#4CAF50" 
-                                stroke-width="12" 
+                                stroke="#10B981" 
+                                stroke-width="10" 
                                 fill="none"
                                 stroke-dasharray="${(data.classification.health_score / 100) * 377} 377"
                                 stroke-linecap="round" />
                     </svg>
-                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; font-weight: 700; color: #667eea;">
-                        ${data.classification.health_score}
-                    </div>
+                    <div class="score-value">${data.classification.health_score}</div>
                 </div>
-                <p style="color: #666; margin-top: 10px;">out of 100</p>
+                <p class="score-label">out of 100</p>
             </div>
             
-            <!-- Nutrition Features -->
-            <h4 style="color: #667eea; margin: 25px 0 15px;">📈 Your Nutrition Profile</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin: 20px 0;">
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #667eea;">
-                    <h4 style="color: #667eea; font-size: 14px; margin-bottom: 8px;">PROTEIN</h4>
-                    <div style="font-size: 24px; font-weight: 700; color: #333;">${data.features.protein_ratio}%</div>
-                </div>
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #4CAF50;">
-                    <h4 style="color: #4CAF50; font-size: 14px; margin-bottom: 8px;">CARBS</h4>
-                    <div style="font-size: 24px; font-weight: 700; color: #333;">${data.features.carbs_ratio}%</div>
-                </div>
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #FFC107;">
-                    <h4 style="color: #FFC107; font-size: 14px; margin-bottom: 8px;">FAT</h4>
-                    <div style="font-size: 24px; font-weight: 700; color: #333;">${data.features.fat_ratio}%</div>
-                </div>
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #9C27B0;">
-                    <h4 style="color: #9C27B0; font-size: 14px; margin-bottom: 8px;">MEALS</h4>
-                    <div style="font-size: 24px; font-weight: 700; color: #333;">${data.features.total_meals_analyzed}</div>
-                </div>
-            </div>
-            
-            <!-- AI Recommendations -->
-            <div style="background: #fff3cd; padding: 20px; border-radius: 10px; border-left: 5px solid #ffc107; margin-top: 20px;">
-                <h4 style="color: #856404; margin-bottom: 15px; font-size: 18px;">💡 AI-Powered Recommendations</h4>
-                ${data.recommendations.map(rec => `
-                    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: white; border-radius: 8px; margin-bottom: 10px;">
-                        <div style="font-size: 24px; flex-shrink: 0;">${rec.substring(0, 2)}</div>
-                        <div style="font-size: 15px; color: #333; line-height: 1.5;">${rec.substring(2)}</div>
+            <!-- Right: Nutrition Profile -->
+            <div class="ai-nutrition-profile">
+                <h4>📈 Your Nutrition Profile</h4>
+                <div class="nutrition-stats-grid">
+                    <div class="nutrition-stat-box">
+                        <h5>Protein</h5>
+                        <div class="value">${data.features.protein_ratio}%</div>
                     </div>
-                `).join('')}
+                    <div class="nutrition-stat-box">
+                        <h5>Carbs</h5>
+                        <div class="value">${data.features.carbs_ratio}%</div>
+                    </div>
+                    <div class="nutrition-stat-box">
+                        <h5>Fat</h5>
+                        <div class="value">${data.features.fat_ratio}%</div>
+                    </div>
+                    <div class="nutrition-stat-box">
+                        <h5>Meals</h5>
+                        <div class="value">${data.features.total_meals_analyzed}</div>
+                    </div>
+                </div>
+                
+                <!-- Recommendations -->
+                <div class="ai-recommendations">
+                    <h4>💡 AI-Powered Recommendations</h4>
+                    <div class="recommendation-list">
+                        ${data.recommendations.map(rec => `
+                            <div class="recommendation-item">
+                                <span class="recommendation-icon">${rec.substring(0, 2)}</span>
+                                <span class="recommendation-text">${rec.substring(2)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
             </div>
+        </div>
+        
+        <!-- Timestamp -->
+        <div class="ai-timestamp">
+            🕐 Analysis updated: ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
         </div>
     `;
     
     resultsContainer.innerHTML = html;
     resultsContainer.style.display = 'block';
     
-    // Scroll to results smoothly
+    // Smooth scroll to results
     setTimeout(() => {
         resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
@@ -361,8 +307,7 @@ async function deleteMeal(mealId) {
     const { response } = await makeApiCall(`/meal/delete/${mealId}`, 'DELETE');
     
     if (response.ok) {
-      // Refresh the display
-      loadMealStatsWithGoals(); // CHANGED: Use enhanced version
+      loadMealStatsWithGoals();
       loadTodaysMeals();
     } else {
       alert('Error deleting meal');
@@ -423,7 +368,6 @@ function displayFoodSuggestions(foods) {
   `).join('');
 }
 
-// Enhanced selectFood function with debug logs
 async function selectFood(foodId, foodName) {
   if (DEBUG_MODE) {
     console.log('Selected food:', foodId, foodName);
@@ -434,14 +378,12 @@ async function selectFood(foodId, foodName) {
   document.getElementById('foodSearch').value = foodName;
   document.getElementById('foodSuggestions').innerHTML = '';
   
-  // Show loading in nutrition preview
   document.getElementById('nutritionPreview').style.display = 'block';
   document.getElementById('previewCalories').textContent = 'Loading...';
   document.getElementById('previewProtein').textContent = 'Loading...';
   document.getElementById('previewCarbs').textContent = 'Loading...';
   document.getElementById('previewFat').textContent = 'Loading...';
   
-  // Load nutrition details
   try {
     if (DEBUG_MODE) {
       console.log('Fetching food details for ID:', foodId);
@@ -465,7 +407,6 @@ async function selectFood(foodId, foodName) {
   }
 }
 
-// Enhanced displayNutritionPreview function
 function displayNutritionPreview(foodData) {
   if (DEBUG_MODE) {
     console.log('Displaying nutrition for:', foodData);
@@ -506,23 +447,19 @@ function closeModal() {
   document.getElementById('foodSuggestions').innerHTML = '';
   document.getElementById('nutritionPreview').style.display = 'none';
   
-  // Reset form fields
   document.getElementById('selectedFoodId').value = '';
   document.getElementById('selectedFoodName').value = '';
   selectedFood = null;
 }
 
-// Show Nutrition Analysis Modal - UPDATED
 function showNutritionAnalysis() {
   document.getElementById('analysisModal').style.display = 'block';
   loadAnalysis();
 }
 
-// Close Analysis Modal
 function closeAnalysisModal() {
   document.getElementById('analysisModal').style.display = 'none';
   
-  // Destroy existing charts to prevent memory leaks
   if (macrosChart) {
     macrosChart.destroy();
     macrosChart = null;
@@ -537,24 +474,20 @@ function showGoalSetting() {
   alert('Goal Setting feature coming soon!');
 }
 
-// ==================== PROFILE FUNCTIONS - ALL NEW ====================
+// ==================== PROFILE FUNCTIONS ====================
 
-// Show Profile Modal - REPLACED the placeholder
 function showProfile() {
   document.getElementById('profileModal').style.display = 'block';
   loadUserProfile();
 }
 
-// Close Profile Modal - NEW
 function closeProfileModal() {
   document.getElementById('profileModal').style.display = 'none';
   document.getElementById('profileMessage').textContent = '';
   document.getElementById('calculatedGoals').style.display = 'none';
 }
 
-// Switch between profile tabs - NEW
 function switchTab(tabName) {
-  // Hide all tabs
   document.querySelectorAll('.tab-content').forEach(tab => {
     tab.classList.remove('active');
   });
@@ -562,12 +495,10 @@ function switchTab(tabName) {
     btn.classList.remove('active');
   });
   
-  // Show selected tab
   document.getElementById(tabName + 'Tab').classList.add('active');
   document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
 }
 
-// Load existing user profile - NEW
 async function loadUserProfile() {
   try {
     const { response, result } = await makeApiCall('/profile');
@@ -575,12 +506,10 @@ async function loadUserProfile() {
     if (response.ok) {
       populateProfileForm(result);
       
-      // Show calculated goals if they exist
       if (result.dailyCalories) {
         displayCalculatedGoals(result);
       }
     } else if (response.status === 404) {
-      // Profile doesn't exist yet, that's okay
       if (DEBUG_MODE) {
         console.log('No existing profile found');
       }
@@ -590,9 +519,7 @@ async function loadUserProfile() {
   }
 }
 
-// Populate form with existing profile data - NEW
 function populateProfileForm(profile) {
-  // Personal Info
   document.getElementById('fullName').value = profile.fullName || '';
   document.getElementById('age').value = profile.age || '';
   document.getElementById('gender').value = profile.gender || '';
@@ -600,7 +527,6 @@ function populateProfileForm(profile) {
   document.getElementById('weight').value = profile.weight || '';
   document.getElementById('activityLevel').value = profile.activityLevel || '';
   
-  // Goals & Preferences
   document.getElementById('primaryGoal').value = profile.primaryGoal || '';
   document.getElementById('targetWeight').value = profile.targetWeight || '';
   document.getElementById('dietPreference').value = profile.dietPreference || 'none';
@@ -608,9 +534,7 @@ function populateProfileForm(profile) {
   document.getElementById('healthConditions').value = profile.healthConditions || '';
 }
 
-// Calculate personalized nutrition goals - NEW
 function calculateGoals() {
-  // Get form data
   const age = parseInt(document.getElementById('age').value);
   const weight = parseFloat(document.getElementById('weight').value);
   const height = parseInt(document.getElementById('height').value);
@@ -618,17 +542,14 @@ function calculateGoals() {
   const activityLevel = document.getElementById('activityLevel').value;
   const weeklyGoal = parseFloat(document.getElementById('weeklyGoal').value || 0);
   
-  // Validate required fields
   if (!age || !weight || !height || !gender || !activityLevel) {
     document.getElementById('profileMessage').className = 'message error';
     document.getElementById('profileMessage').textContent = 'Please fill in all personal information fields first.';
     return;
   }
   
-  // Clear any error messages
   document.getElementById('profileMessage').textContent = '';
   
-  // Calculate BMR using Mifflin-St Jeor Equation
   let bmr;
   if (gender === 'male') {
     bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
@@ -636,7 +557,6 @@ function calculateGoals() {
     bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
   }
   
-  // Activity level multipliers
   const activityMultipliers = {
     'sedentary': 1.2,
     'light': 1.375,
@@ -645,24 +565,20 @@ function calculateGoals() {
     'very_active': 1.9
   };
   
-  // Calculate TDEE (Total Daily Energy Expenditure)
   const tdee = bmr * (activityMultipliers[activityLevel] || 1.2);
   
-  // Adjust for weekly weight goal (1 kg = 7700 calories)
   const weeklyCalorieAdjustment = weeklyGoal * 7700;
   const dailyCalorieAdjustment = weeklyCalorieAdjustment / 7;
   const dailyCalories = Math.round(tdee + dailyCalorieAdjustment);
   
-  // Calculate macronutrient goals
-  const proteinCalories = dailyCalories * 0.25; // 25% protein
-  const carbsCalories = dailyCalories * 0.45;   // 45% carbs
-  const fatCalories = dailyCalories * 0.30;     // 30% fat
+  const proteinCalories = dailyCalories * 0.25;
+  const carbsCalories = dailyCalories * 0.45;
+  const fatCalories = dailyCalories * 0.30;
   
-  const dailyProtein = Math.round(proteinCalories / 4); // 4 calories per gram
-  const dailyCarbs = Math.round(carbsCalories / 4);     // 4 calories per gram
-  const dailyFat = Math.round(fatCalories / 9);         // 9 calories per gram
+  const dailyProtein = Math.round(proteinCalories / 4);
+  const dailyCarbs = Math.round(carbsCalories / 4);
+  const dailyFat = Math.round(fatCalories / 9);
   
-  // Display calculated goals
   const goalsData = {
     dailyCalories,
     dailyProtein,
@@ -673,7 +589,6 @@ function calculateGoals() {
   displayCalculatedGoals(goalsData);
 }
 
-// Display calculated nutrition goals - NEW
 function displayCalculatedGoals(goals) {
   document.getElementById('dailyCalories').textContent = goals.dailyCalories;
   document.getElementById('dailyProtein').textContent = goals.dailyProtein + 'g';
@@ -682,38 +597,31 @@ function displayCalculatedGoals(goals) {
   
   document.getElementById('calculatedGoals').style.display = 'block';
   
-  // Scroll to goals section
   document.getElementById('calculatedGoals').scrollIntoView({ 
     behavior: 'smooth', 
     block: 'center' 
   });
 }
 
-// Save complete profile - NEW
 async function saveProfile() {
-  // Collect all form data
   const personalForm = document.getElementById('personalInfoForm');
   const goalsForm = document.getElementById('goalsForm');
   
   const formData = new FormData();
   
-  // Add personal info
   new FormData(personalForm).forEach((value, key) => {
     formData.append(key, value);
   });
   
-  // Add goals info
   new FormData(goalsForm).forEach((value, key) => {
     formData.append(key, value);
   });
   
-  // Convert to JSON
   const profileData = {};
   formData.forEach((value, key) => {
     profileData[key] = value;
   });
   
-  // Validate required fields
   const requiredFields = ['fullName', 'age', 'gender', 'height', 'weight', 'activityLevel', 'primaryGoal'];
   const missingFields = requiredFields.filter(field => !profileData[field]);
   
@@ -730,10 +638,7 @@ async function saveProfile() {
       document.getElementById('profileMessage').className = 'message success';
       document.getElementById('profileMessage').textContent = 'Profile saved successfully! Your personalized goals have been calculated.';
       
-      // Display the calculated goals from server response
       displayCalculatedGoals(result.profile);
-      
-      // Update dashboard stats if needed
       updateDashboardGoals(result.profile);
       
     } else {
@@ -747,14 +652,10 @@ async function saveProfile() {
   }
 }
 
-// Update dashboard with personalized goals - NEW
 function updateDashboardGoals(profile) {
-  // You can update the dashboard goal display here
-  // For example, update the daily goal percentage calculation
   loadMealStatsWithGoals();
 }
 
-// Enhanced meal stats loading with personalized goals - NEW
 async function loadMealStatsWithGoals() {
   try {
     const [statsResult, profileResult] = await Promise.all([
@@ -766,7 +667,6 @@ async function loadMealStatsWithGoals() {
       const stats = statsResult.result;
       let goalProgress = stats.goal_progress;
       
-      // Use personalized goals if profile exists
       if (profileResult.response && profileResult.response.ok) {
         const profile = profileResult.result;
         if (profile.dailyCalories) {
@@ -784,13 +684,10 @@ async function loadMealStatsWithGoals() {
   }
 }
 
-// ==================== END OF PROFILE FUNCTIONS ====================
-
 // Logout function
 function logout() {
   localStorage.removeItem(TOKEN_KEY);
   
-  // Also remove user preferences
   if (typeof CONFIG !== 'undefined') {
     localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_PREFERENCES);
   }
@@ -798,7 +695,7 @@ function logout() {
   window.location.href = 'index.html';
 }
 
-// Enhanced meal form submission with proper nutrition handling
+// Enhanced meal form submission
 document.getElementById('addMealForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   
@@ -808,7 +705,6 @@ document.getElementById('addMealForm').addEventListener('submit', async (e) => {
     quantity: formData.get('quantity'),
   };
   
-  // Get selected food data from hidden inputs
   const selectedFoodName = document.getElementById('selectedFoodName').value;
   const selectedFoodId = document.getElementById('selectedFoodId').value;
   
@@ -818,11 +714,9 @@ document.getElementById('addMealForm').addEventListener('submit', async (e) => {
   }
   
   if (selectedFoodName && selectedFoodId) {
-    // Use selected food from dropdown
     mealData.foodName = selectedFoodName;
     mealData.food_id = selectedFoodId;
     
-    // Add nutrition data if available
     if (selectedFood && selectedFood.food && selectedFood.food.servings) {
       let serving;
       if (Array.isArray(selectedFood.food.servings.serving)) {
@@ -841,7 +735,6 @@ document.getElementById('addMealForm').addEventListener('submit', async (e) => {
       mealData.fat = parseFloat(serving.fat) || 0;
     }
   } else {
-    // Fallback to manual input
     mealData.foodName = document.getElementById('foodSearch').value;
     mealData.calories = 0;
     if (DEBUG_MODE) {
@@ -861,22 +754,18 @@ document.getElementById('addMealForm').addEventListener('submit', async (e) => {
     }
     
     if (response.ok) {
-      // Show success message
       const message = document.getElementById('mealMessage');
       message.className = 'message success';
       message.textContent = 'Meal added successfully!';
       
-      // Reset form
       e.target.reset();
       document.getElementById('foodSearch').value = '';
       document.getElementById('selectedFoodId').value = '';
       document.getElementById('selectedFoodName').value = '';
       
-      // Update dashboard with enhanced stats
-      loadMealStatsWithGoals(); // CHANGED: Use enhanced version
+      loadMealStatsWithGoals();
       loadTodaysMeals();
       
-      // Close modal after 2 seconds
       setTimeout(() => {
         closeModal();
       }, 2000);
@@ -912,12 +801,10 @@ async function loadAnalysis() {
 
 // Display Analysis Data with Charts
 function displayAnalysisData(data) {
-  // Update stats
   document.getElementById('totalCaloriesAnalysis').textContent = data.total_calories;
   document.getElementById('avgCaloriesAnalysis').textContent = data.avg_calories;
   document.getElementById('totalMealsAnalysis').textContent = data.total_meals;
   
-  // Update recommendations
   const recommendationsList = document.getElementById('recommendationsList');
   if (data.recommendations.length > 0) {
     recommendationsList.innerHTML = data.recommendations.map(rec => `<p>${rec}</p>`).join('');
@@ -925,30 +812,23 @@ function displayAnalysisData(data) {
     recommendationsList.innerHTML = '<p>No recommendations available yet. Log more meals!</p>';
   }
   
-  // Create Macros Pie Chart
   createMacrosChart(data.total_protein, data.total_carbs, data.total_fat);
-  
-  // Create Daily Calories Chart
   createCaloriesChart(data.daily_data);
 }
 
-// Create Macronutrient Pie Chart - FIXED
 function createMacrosChart(protein, carbs, fat) {
   const ctx = document.getElementById('macrosChart').getContext('2d');
   
-  // Destroy existing chart
   if (macrosChart) {
     macrosChart.destroy();
   }
   
-  // Calculate calories from macros
   const proteinCals = protein * 4;
   const carbsCals = carbs * 4;
   const fatCals = fat * 9;
   const total = proteinCals + carbsCals + fatCals;
   
   if (total === 0) {
-    // Show placeholder when no data
     ctx.fillStyle = '#f8f9fa';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.fillStyle = '#6c757d';
@@ -964,11 +844,7 @@ function createMacrosChart(protein, carbs, fat) {
       labels: ['Protein', 'Carbohydrates', 'Fat'],
       datasets: [{
         data: [proteinCals, carbsCals, fatCals],
-        backgroundColor: [
-          '#FF6B6B',  // Red for protein
-          '#4ECDC4',  // Teal for carbs
-          '#FFE66D'   // Yellow for fat
-        ],
+        backgroundColor: ['#FF6B6B', '#4ECDC4', '#FFE66D'],
         borderWidth: 3,
         borderColor: '#fff',
         hoverBorderWidth: 4
@@ -984,9 +860,7 @@ function createMacrosChart(protein, carbs, fat) {
           labels: {
             padding: 15,
             usePointStyle: true,
-            font: {
-              size: 12
-            }
+            font: { size: 12 }
           }
         },
         tooltip: {
@@ -1005,21 +879,17 @@ function createMacrosChart(protein, carbs, fat) {
   });
 }
 
-// Create Daily Calories Line Chart - FIXED
 function createCaloriesChart(dailyData) {
   const ctx = document.getElementById('caloriesChart').getContext('2d');
   
-  // Destroy existing chart
   if (caloriesChart) {
     caloriesChart.destroy();
   }
   
-  // Prepare data for chart
   const dates = Object.keys(dailyData).sort();
   const calories = dates.map(date => dailyData[date].calories);
   
   if (dates.length === 0) {
-    // Show placeholder when no data
     ctx.fillStyle = '#f8f9fa';
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.fillStyle = '#6c757d';
@@ -1029,7 +899,6 @@ function createCaloriesChart(dailyData) {
     return;
   }
   
-  // Format dates for display
   const formattedDates = dates.map(date => {
     const d = new Date(date);
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -1061,28 +930,17 @@ function createCaloriesChart(dailyData) {
       scales: {
         y: {
           beginAtZero: true,
-          grid: {
-            color: 'rgba(0,0,0,0.1)'
-          },
+          grid: { color: 'rgba(0,0,0,0.1)' },
           title: {
             display: true,
             text: 'Calories',
-            font: {
-              size: 12,
-              weight: 'bold'
-            }
+            font: { size: 12, weight: 'bold' }
           }
         },
-        x: {
-          grid: {
-            color: 'rgba(0,0,0,0.1)'
-          }
-        }
+        x: { grid: { color: 'rgba(0,0,0,0.1)' } }
       },
       plugins: {
-        legend: {
-          display: false
-        },
+        legend: { display: false },
         tooltip: {
           backgroundColor: 'rgba(0,0,0,0.8)',
           titleColor: '#fff',
@@ -1101,7 +959,7 @@ function createCaloriesChart(dailyData) {
   });
 }
 
-// Close modal when clicking outside - UPDATED to include profile modal
+// Close modal when clicking outside
 window.onclick = function(event) {
   const addMealModal = document.getElementById('addMealModal');
   const analysisModal = document.getElementById('analysisModal');
@@ -1113,9 +971,7 @@ window.onclick = function(event) {
   if (event.target === analysisModal) {
     closeAnalysisModal();
   }
-  if (event.target === profileModal) { // NEW: Added profile modal handling
+  if (event.target === profileModal) {
     closeProfileModal();
   }
 }
-
-

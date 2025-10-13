@@ -1,25 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard - Nutrition Advisor</title>
-  <link rel="stylesheet" href="dashboard-style.css" />
+  <title>Dashboard - NutriAI</title>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-  </style>
-
-
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="dashboard-style.css" />
 </head>
 
 <body>
@@ -27,11 +23,13 @@
   <nav class="navbar">
     <div class="nav-container">
       <div class="logo">
-        <h2>🥗 Nutrition Advisor</h2>
+        <h2>🧠 NutriAI</h2>
       </div>
       <div class="nav-items">
         <span id="welcomeText">Welcome!</span>
-        <button onclick="logout()" class="btn btn-outline">Logout</button>
+        <button onclick="logout()" class="btn btn-outline">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
       </div>
     </div>
   </nav>
@@ -95,9 +93,128 @@
         </div>
       </div>
 
+      <!-- AI MODELS SECTION - PROFESSIONAL LAYOUT -->
+      <section class="ai-models-section">
+        <div class="section-header-ai">
+          <h2>🤖 AI-Powered Intelligence Hub</h2>
+          <p>Advanced machine learning models for personalized nutrition insights</p>
+        </div>
+
+        <div class="ai-models-grid">
+          
+          <!-- MODEL 1: Diet Classification (Active) -->
+          <div class="ai-model-card">
+            <div class="ai-model-header">
+              <div class="ai-model-icon">🧠</div>
+              <h3>Diet Classification</h3>
+              <span class="ai-model-badge">Active • ML Powered</span>
+            </div>
+            
+            <p class="ai-model-description">
+              Supervised machine learning analyzes your last 5 meals to classify your diet type with 95% accuracy. Get instant insights into your eating patterns.
+            </p>
+            
+            <ul class="ai-model-features">
+              <li><i class="fas fa-check-circle"></i> Analyzes last 5 meals</li>
+              <li><i class="fas fa-check-circle"></i> 95% classification accuracy</li>
+              <li><i class="fas fa-check-circle"></i> Real-time health score</li>
+              <li><i class="fas fa-check-circle"></i> Personalized recommendations</li>
+            </ul>
+            
+            <div class="ai-model-actions">
+              <button id="aiAnalyzeBtn" onclick="runDietClassification()" class="ai-analyze-btn">
+                <i class="fas fa-brain"></i> Analyze My Diet
+              </button>
+              <button id="aiRefreshBtn" onclick="runDietClassification()" class="ai-refresh-btn" style="display: none;">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- MODEL 2: Meal Recommendations (Coming Soon) -->
+          <div class="ai-model-card coming-soon">
+            <div class="ai-model-header">
+              <div class="ai-model-icon">🍲</div>
+              <h3>Smart Meal Recommender</h3>
+              <span class="ai-model-badge coming-soon-badge">Coming Soon</span>
+            </div>
+            
+            <p class="ai-model-description">
+              AI-powered meal suggestions based on your preferences, dietary restrictions, and nutritional goals. Personalized recipes just for you.
+            </p>
+            
+            <ul class="ai-model-features">
+              <li><i class="fas fa-clock"></i> 10,000+ recipe database</li>
+              <li><i class="fas fa-clock"></i> Custom meal plans</li>
+              <li><i class="fas fa-clock"></i> Ingredient substitutions</li>
+              <li><i class="fas fa-clock"></i> Shopping list generator</li>
+            </ul>
+            
+            <div class="coming-soon-label">
+              <h4>🚧 Under Development</h4>
+              <p>Expected Launch: Q2 2025</p>
+            </div>
+          </div>
+
+          <!-- MODEL 3: Nutrient Gap Analyzer (Coming Soon) -->
+          <div class="ai-model-card coming-soon">
+            <div class="ai-model-header">
+              <div class="ai-model-icon">📊</div>
+              <h3>Nutrient Gap Analyzer</h3>
+              <span class="ai-model-badge coming-soon-badge">Coming Soon</span>
+            </div>
+            
+            <p class="ai-model-description">
+              Deep learning model identifies vitamin and mineral deficiencies in your diet. Provides actionable insights to optimize nutrition.
+            </p>
+            
+            <ul class="ai-model-features">
+              <li><i class="fas fa-clock"></i> 30+ micronutrient tracking</li>
+              <li><i class="fas fa-clock"></i> Deficiency alerts</li>
+              <li><i class="fas fa-clock"></i> Food source suggestions</li>
+              <li><i class="fas fa-clock"></i> Weekly reports</li>
+            </ul>
+            
+            <div class="coming-soon-label">
+              <h4>🚧 Under Development</h4>
+              <p>Expected Launch: Q3 2025</p>
+            </div>
+          </div>
+
+          <!-- MODEL 4: Calorie Burn Predictor (Coming Soon) -->
+          <div class="ai-model-card coming-soon">
+            <div class="ai-model-header">
+              <div class="ai-model-icon">🏃</div>
+              <h3>Activity Impact Predictor</h3>
+              <span class="ai-model-badge coming-soon-badge">Coming Soon</span>
+            </div>
+            
+            <p class="ai-model-description">
+              Neural network predicts calorie burn based on your activity level, metabolism, and lifestyle factors. Smart TDEE calculation.
+            </p>
+            
+            <ul class="ai-model-features">
+              <li><i class="fas fa-clock"></i> Activity tracking integration</li>
+              <li><i class="fas fa-clock"></i> Metabolism analysis</li>
+              <li><i class="fas fa-clock"></i> Workout recommendations</li>
+              <li><i class="fas fa-clock"></i> Progress predictions</li>
+            </ul>
+            
+            <div class="coming-soon-label">
+              <h4>🚧 Under Development</h4>
+              <p>Expected Launch: Q4 2025</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- AI Results Display -->
+        <div id="aiClassificationResults"></div>
+      </section>
+
       <!-- Recent Meals -->
       <div class="recent-section">
-        <h2>Today's Meals</h2>
+        <h2>📝 Today's Meals</h2>
         <div id="recentMeals" class="meals-list">
           <div class="empty-state">
             <p>No meals logged today. Start by adding your first meal!</p>
@@ -109,20 +226,19 @@
   </div>
 
   <!-- Add Meal Modal -->
-  <!-- Add Meal Modal -->
   <div id="addMealModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="closeModal()">&times;</span>
-      <h2>Log Your Meal</h2>
+      <h2>🍽️ Log Your Meal</h2>
       <form id="addMealForm" class="meal-form">
         <div class="form-group">
           <label>Meal Type:</label>
           <select name="mealType" required>
             <option value="">Select meal type</option>
-            <option value="breakfast">Breakfast</option>
-            <option value="lunch">Lunch</option>
-            <option value="dinner">Dinner</option>
-            <option value="snack">Snack</option>
+            <option value="breakfast">🌅 Breakfast</option>
+            <option value="lunch">☀️ Lunch</option>
+            <option value="dinner">🌙 Dinner</option>
+            <option value="snack">🍪 Snack</option>
           </select>
         </div>
 
@@ -149,16 +265,12 @@
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-full">Add Meal</button>
+        <button type="submit" class="btn btn-primary btn-full">
+          <i class="fas fa-plus-circle"></i> Add Meal
+        </button>
       </form>
       <p id="mealMessage" class="message"></p>
     </div>
-  </div>
-
-  <button type="submit" class="btn btn-primary btn-full">Add Meal</button>
-  </form>
-  <p id="mealMessage" class="message"></p>
-  </div>
   </div>
 
   <!-- Nutrition Analysis Modal -->
@@ -167,7 +279,6 @@
       <span class="close" onclick="closeAnalysisModal()">&times;</span>
       <h2>📊 Nutrition Analysis</h2>
 
-      <!-- Date Filter -->
       <div class="analysis-filters">
         <label>Time Period:</label>
         <select id="periodFilter" onchange="loadAnalysis()">
@@ -177,7 +288,6 @@
         </select>
       </div>
 
-      <!-- Stats Overview -->
       <div class="analysis-stats">
         <div class="analysis-stat">
           <span class="stat-number" id="totalCaloriesAnalysis">0</span>
@@ -193,22 +303,18 @@
         </div>
       </div>
 
-      <!-- Charts Container -->
       <div class="charts-container">
-        <!-- Macros Pie Chart -->
         <div class="chart-section">
           <h3>Macronutrient Breakdown</h3>
           <canvas id="macrosChart" width="300" height="300"></canvas>
         </div>
 
-        <!-- Daily Progress Chart -->
         <div class="chart-section">
           <h3>Daily Calorie Trend</h3>
           <canvas id="caloriesChart" width="400" height="200"></canvas>
         </div>
       </div>
 
-      <!-- Recommendations -->
       <div class="recommendations">
         <h3>💡 Insights & Recommendations</h3>
         <div id="recommendationsList">
@@ -217,19 +323,18 @@
       </div>
     </div>
   </div>
+
   <!-- User Profile Modal -->
   <div id="profileModal" class="modal">
     <div class="modal-content profile-modal">
       <span class="close" onclick="closeProfileModal()">&times;</span>
       <h2>👤 My Profile & Goals</h2>
 
-      <!-- Profile Tabs -->
       <div class="profile-tabs">
         <button class="tab-btn active" onclick="switchTab('personal')">Personal Info</button>
         <button class="tab-btn" onclick="switchTab('goals')">Goals & Preferences</button>
       </div>
 
-      <!-- Personal Information Tab -->
       <div id="personalTab" class="tab-content active">
         <form id="personalInfoForm" class="profile-form">
           <div class="form-row">
@@ -279,7 +384,6 @@
         </form>
       </div>
 
-      <!-- Goals & Preferences Tab -->
       <div id="goalsTab" class="tab-content">
         <form id="goalsForm" class="profile-form">
           <div class="form-row">
@@ -296,8 +400,7 @@
             </div>
             <div class="form-group">
               <label>Target Weight (kg):</label>
-              <input type="number" name="targetWeight" id="targetWeight" placeholder="65" min="30" max="300"
-                step="0.1" />
+              <input type="number" name="targetWeight" id="targetWeight" placeholder="65" min="30" max="300" step="0.1" />
             </div>
           </div>
 
@@ -336,7 +439,6 @@
         </form>
       </div>
 
-      <!-- Calculated Goals Display -->
       <div id="calculatedGoals" class="goals-display" style="display:none;">
         <h3>📊 Your Personalized Goals</h3>
         <div class="goals-grid">
@@ -359,217 +461,21 @@
         </div>
       </div>
 
-      <!-- Action Buttons -->
       <div class="profile-actions">
-        <button type="button" onclick="calculateGoals()" class="btn btn-outline">Calculate Goals</button>
-        <button type="button" onclick="saveProfile()" class="btn btn-primary">Save Profile</button>
+        <button type="button" onclick="calculateGoals()" class="btn btn-outline">
+          <i class="fas fa-calculator"></i> Calculate Goals
+        </button>
+        <button type="button" onclick="saveProfile()" class="btn btn-primary">
+          <i class="fas fa-save"></i> Save Profile
+        </button>
       </div>
 
       <p id="profileMessage" class="message"></p>
     </div>
   </div>
 
-  <!-- AI Diet Classification Section -->
-  <div
-    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 15px; margin: 30px 0; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
-    <div style="text-align: center; color: white; margin-bottom: 25px;">
-      <h2 style="font-size: 28px; margin-bottom: 10px; font-weight: 700;">🤖 AI-Powered Diet Classification</h2>
-      <p style="font-size: 16px; opacity: 0.9;">Supervised Machine Learning analyzes your eating patterns</p>
-      <p style="font-size: 13px; opacity: 0.7; margin-top: 5px;">Analysis based on your last 5 meals</p>
-    </div>
-
-    <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
-      <button id="aiAnalyzeBtn"
-        style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 18px 30px; font-size: 18px; font-weight: 600; background: white; color: #667eea; border: none; border-radius: 50px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);">
-        <span style="font-size: 24px;">🧠</span>
-        Analyze My Diet with AI
-        <span
-          style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;">ML
-          Powered</span>
-      </button>
-
-      <button id="aiRefreshBtn"
-        style="display: none; align-items: center; gap: 8px; padding: 12px 20px; font-size: 14px; font-weight: 600; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 50px; cursor: pointer; transition: all 0.3s ease;">
-        <span style="font-size: 18px;">🔄</span>
-        Refresh Analysis
-      </button>
-    </div>
-
-    <div id="aiClassificationResults" style="margin-top: 30px; background: white; border-radius: 15px; display: none;">
-    </div>
-  </div>
-
-  <style>
-    @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-
-    #aiRefreshBtn:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: scale(1.05);
-    }
-  </style>
-
-  <script>
-    // AI Classification - Enhanced with refresh capability
-    document.addEventListener('DOMContentLoaded', function () {
-      const aiBtn = document.getElementById('aiAnalyzeBtn');
-      const refreshBtn = document.getElementById('aiRefreshBtn');
-
-      if (!aiBtn) return;
-
-      async function runAIAnalysis() {
-        const resultsContainer = document.getElementById('aiClassificationResults');
-        const button = aiBtn;
-        const originalHTML = button.innerHTML;
-
-        button.disabled = true;
-        button.innerHTML = '<div style="display: inline-block; width: 20px; height: 20px; border: 3px solid #667eea; border-top: 3px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 10px;"></div> Analyzing...';
-
-        resultsContainer.style.display = 'block';
-        resultsContainer.innerHTML = `
-            <div style="text-align: center; padding: 40px;">
-                <div style="border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-                <h3 style="color: #667eea;">🧠 AI is analyzing your diet patterns...</h3>
-<p style="font-size: 13px; opacity: 0.7; margin-top: 5px;">Analysis based on your last 5 meals</p>
-            </div>
-        `;
-
-        try {
-          const TOKEN_KEY = typeof CONFIG !== 'undefined' ? CONFIG.STORAGE_KEYS.JWT_TOKEN : 'token';
-          const API_URL = typeof CONFIG !== 'undefined' ? CONFIG.API_BASE_URL : 'https://nutrition-advisor-a93q.onrender.com';
-          const token = localStorage.getItem(TOKEN_KEY);
-
-          if (!token) {
-            throw new Error('No authentication token found. Please login again.');
-          }
-
-          const response = await fetch(`${API_URL}/ai/diet-classification`, {
-            method: 'GET',
-            headers: {
-              'Authorization': 'Bearer ' + token,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          const result = await response.json();
-
-          if (response.ok) {
-            const data = result;
-            resultsContainer.innerHTML = `
-                    <div style="padding: 25px;">
-                        <!-- Last Updated Badge -->
-                        <div style="text-align: center; margin-bottom: 15px;">
-                            <small style="color: #666; font-size: 12px;">
-                                🕐 Analysis updated: ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                            </small>
-                        </div>
-                        
-                        <div style="text-align: center; margin-bottom: 20px;">
-                            <span style="background: #667eea; color: white; padding: 8px 20px; border-radius: 20px; font-weight: 600;">
-                                📊 ${data.algorithm}
-                            </span>
-                        </div>
-                        
-                        <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; color: white; margin-bottom: 25px;">
-                            <h3 style="font-size: 32px; margin-bottom: 10px;">🎯 ${data.classification.diet_type}</h3>
-                            <div style="display: inline-block; background: rgba(255, 255, 255, 0.3); padding: 8px 20px; border-radius: 25px; font-size: 18px; font-weight: 600;">
-                                ${data.classification.confidence}% Confidence
-                            </div>
-                        </div>
-                        
-                        <div style="text-align: center; margin: 25px 0;">
-                            <h4 style="color: #667eea; margin-bottom: 15px;">Your Health Score</h4>
-                            <div style="position: relative; width: 150px; height: 150px; margin: 0 auto;">
-                                <svg width="150" height="150" style="transform: rotate(-90deg);">
-                                    <circle cx="75" cy="75" r="60" stroke="#e0e0e0" stroke-width="12" fill="none" />
-                                    <circle cx="75" cy="75" r="60" stroke="#4CAF50" stroke-width="12" fill="none"
-                                            stroke-dasharray="${(data.classification.health_score / 100) * 377} 377" stroke-linecap="round" />
-                                </svg>
-                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; font-weight: 700; color: #667eea;">
-                                    ${data.classification.health_score}
-                                </div>
-                            </div>
-                            <p style="color: #666; margin-top: 10px;">out of 100</p>
-                        </div>
-                        
-                        <h4 style="color: #667eea; margin: 25px 0 15px;">📈 Your Nutrition Profile</h4>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
-                            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #667eea;">
-                                <h4 style="color: #667eea; font-size: 14px; margin-bottom: 8px;">PROTEIN</h4>
-                                <div style="font-size: 24px; font-weight: 700;">${data.features.protein_ratio}%</div>
-                            </div>
-                            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #4CAF50;">
-                                <h4 style="color: #4CAF50; font-size: 14px; margin-bottom: 8px;">CARBS</h4>
-                                <div style="font-size: 24px; font-weight: 700;">${data.features.carbs_ratio}%</div>
-                            </div>
-                            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #FFC107;">
-                                <h4 style="color: #FFC107; font-size: 14px; margin-bottom: 8px;">FAT</h4>
-                                <div style="font-size: 24px; font-weight: 700;">${data.features.fat_ratio}%</div>
-                            </div>
-                            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border-left: 4px solid #9C27B0;">
-                                <h4 style="color: #9C27B0; font-size: 14px; margin-bottom: 8px;">MEALS</h4>
-                                <div style="font-size: 24px; font-weight: 700;">${data.features.total_meals_analyzed}</div>
-                            </div>
-                        </div>
-                        
-                        <div style="background: #fff3cd; padding: 20px; border-radius: 10px; border-left: 5px solid #ffc107; margin-top: 20px;">
-                            <h4 style="color: #856404; margin-bottom: 15px;">💡 AI-Powered Recommendations</h4>
-                            ${data.recommendations.map(rec => `
-                                <div style="display: flex; gap: 12px; padding: 12px; background: white; border-radius: 8px; margin-bottom: 10px;">
-                                    <div style="font-size: 24px;">${rec.substring(0, 2)}</div>
-                                    <div style="font-size: 15px; color: #333;">${rec.substring(2)}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-
-            // Show refresh button after first analysis
-            refreshBtn.style.display = 'flex';
-
-            setTimeout(() => resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
-          } else {
-            resultsContainer.innerHTML = `
-                    <div style="background: #fff3cd; padding: 30px; border-radius: 10px; text-align: center;">
-                        <h3 style="color: #856404;">⚠️ ${result.error || 'Analysis failed'}</h3>
-                        <p style="color: #856404;">${result.current_meals ? `You have ${result.current_meals} meals. Need at least 5 meals.` : 'Please log more meals.'}</p>
-                    </div>
-                `;
-          }
-        } catch (error) {
-          console.error('❌ AI Classification Error:', error);
-          resultsContainer.innerHTML = `
-                <div style="background: #f8d7da; padding: 30px; border-radius: 10px; text-align: center;">
-                    <h3 style="color: #721c24;">❌ Connection Error</h3>
-                    <p style="color: #721c24;">${error.message}</p>
-                </div>
-            `;
-        } finally {
-          button.disabled = false;
-          button.innerHTML = originalHTML;
-        }
-      }
-
-      // Main analyze button
-      aiBtn.addEventListener('click', runAIAnalysis);
-
-      // Refresh button
-      if (refreshBtn) {
-        refreshBtn.addEventListener('click', runAIAnalysis);
-      }
-    });
-  </script>
-
-
+  <!-- Scripts -->
   <script src="config.js"></script>
   <script src="dashboard-script.js"></script>
 </body>
-
 </html>
