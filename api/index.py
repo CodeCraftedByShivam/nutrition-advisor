@@ -348,19 +348,28 @@ def get_user_meals(current_user):
         query = {"user_id": str(current_user["_id"])}
         
         if date_filter:
-            start_date = datetime.fromisoformat(date_filter + "T00:00:00+00:00")
-            end_date = datetime.fromisoformat(date_filter + "T23:59:59+00:00")
+            # Parse the date filter (format: YYYY-MM-DD)
+            filter_date = datetime.fromisoformat(date_filter).date()
+            start_date = datetime.combine(filter_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+            end_date = datetime.combine(filter_date, datetime.max.time()).replace(tzinfo=timezone.utc)
             query["created_at"] = {"$gte": start_date, "$lte": end_date}
+            print(f"🔍 Fetching meals for date: {date_filter}")
+        else:
+            # If no date filter, get all meals (sorted by most recent)
+            print(f"🔍 Fetching all meals for user")
         
         meals = list(meals_collection.find(query).sort("created_at", -1))
         
+        # Convert ObjectId and datetime to strings
         for meal in meals:
             meal["_id"] = str(meal["_id"])
             meal["created_at"] = meal["created_at"].isoformat()
         
+        print(f"📊 Returned {len(meals)} meals")
         return jsonify(meals), 200
         
     except Exception as e:
+        print(f"❌ Error fetching meals: {str(e)}")
         return jsonify({"error": "Failed to fetch meals", "details": str(e)}), 500
 
 @app.route("/meal/delete/<meal_id>", methods=["DELETE"])
@@ -517,79 +526,110 @@ def get_nutrition_analysis(current_user):
         meals_collection = db["meals"]
         period = request.args.get('period', 'today')
         
-        today = datetime.now(timezone.utc).date()
+        # Get current time in UTC
+        now = datetime.now(timezone.utc)
+        today = now.date()
         
+        # Calculate date ranges based on period
         if period == 'today':
             start_date = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
-            end_date = datetime.combine(today, datetime.max.time()).replace(tzinfo=timezone.utc)
+            end_date = now  # Use current time instead of max time
         elif period == 'week':
-            start_date = datetime.combine(today - timedelta(days=7), datetime.min.time()).replace(tzinfo=timezone.utc)
-            end_date = datetime.combine(today, datetime.max.time()).replace(tzinfo=timezone.utc)
+            # Last 7 days INCLUDING today
+            start_date = datetime.combine(today - timedelta(days=6), datetime.min.time()).replace(tzinfo=timezone.utc)
+            end_date = now
         elif period == 'month':
-            start_date = datetime.combine(today - timedelta(days=30), datetime.min.time()).replace(tzinfo=timezone.utc)
-            end_date = datetime.combine(today, datetime.max.time()).replace(tzinfo=timezone.utc)
+            # Last 30 days INCLUDING today
+            start_date = datetime.combine(today - timedelta(days=29), datetime.min.time()).replace(tzinfo=timezone.utc)
+            end_date = now
         else:
             start_date = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
-            end_date = datetime.combine(today, datetime.max.time()).replace(tzinfo=timezone.utc)
+            end_date = now
         
+        print(f"🔍 Analysis Query - Period: {period}, Start: {start_date}, End: {end_date}")
+        
+        # Fetch meals within date range
         meals = list(meals_collection.find({
             "user_id": str(current_user["_id"]),
             "created_at": {"$gte": start_date, "$lte": end_date}
         }).sort("created_at", 1))
         
+        print(f"📊 Found {len(meals)} meals for user")
+        
+        # Calculate totals
         total_calories = sum(meal.get("calories", 0) for meal in meals)
         total_protein = sum(meal.get("protein", 0) for meal in meals)
         total_carbs = sum(meal.get("carbs", 0) for meal in meals)
         total_fat = sum(meal.get("fat", 0) for meal in meals)
         
+        # Group by date for daily breakdown
         daily_data = {}
         for meal in meals:
-            date = meal["created_at"].strftime("%Y-%m-%d")
-            if date not in daily_data:
-                daily_data[date] = {"calories": 0, "protein": 0, "carbs": 0, "fat": 0, "meals": 0}
+            # Convert UTC to local date string
+            meal_date = meal["created_at"]
+            date_str = meal_date.strftime("%Y-%m-%d")
             
-            daily_data[date]["calories"] += meal.get("calories", 0)
-            daily_data[date]["protein"] += meal.get("protein", 0)
-            daily_data[date]["carbs"] += meal.get("carbs", 0)
-            daily_data[date]["fat"] += meal.get("fat", 0)
-            daily_data[date]["meals"] += 1
+            if date_str not in daily_data:
+                daily_data[date_str] = {
+                    "calories": 0, 
+                    "protein": 0, 
+                    "carbs": 0, 
+                    "fat": 0, 
+                    "meals": 0
+                }
+            
+            daily_data[date_str]["calories"] += meal.get("calories", 0)
+            daily_data[date_str]["protein"] += meal.get("protein", 0)
+            daily_data[date_str]["carbs"] += meal.get("carbs", 0)
+            daily_data[date_str]["fat"] += meal.get("fat", 0)
+            daily_data[date_str]["meals"] += 1
         
-        recommendations = []
-        days_count = max(len(daily_data), 1)
+        # Calculate averages
+        days_count = len(daily_data) if len(daily_data) > 0 else 1
         avg_calories = total_calories / days_count
         
-        if avg_calories < 1200:
-            recommendations.append("⚠️ Your average daily calories are quite low. Consider adding healthy snacks.")
-        elif avg_calories > 2500:
-            recommendations.append("⚠️ Your average daily calories are high. Consider smaller portions.")
-        else:
-            recommendations.append("✅ Your calorie intake looks balanced!")
-        
-        if total_protein > 0:
-            protein_percentage = (total_protein * 4 / max(total_calories, 1)) * 100
-            if protein_percentage < 15:
-                recommendations.append("💪 Try to increase protein intake for better muscle health.")
-            else:
-                recommendations.append("✅ Great protein intake!")
+        # Generate recommendations
+        recommendations = []
         
         if len(meals) == 0:
             recommendations.append("📝 Start logging meals to get personalized insights!")
+        else:
+            if avg_calories < 1200:
+                recommendations.append("⚠️ Your average daily calories are quite low. Consider adding healthy snacks.")
+            elif avg_calories > 2500:
+                recommendations.append("⚠️ Your average daily calories are high. Consider smaller portions.")
+            else:
+                recommendations.append("✅ Your calorie intake looks balanced!")
+            
+            if total_protein > 0:
+                protein_percentage = (total_protein * 4 / max(total_calories, 1)) * 100
+                if protein_percentage < 15:
+                    recommendations.append("💪 Try to increase protein intake for better muscle health.")
+                else:
+                    recommendations.append("✅ Great protein intake!")
         
         analysis = {
             "period": period,
-            "total_calories": total_calories,
-            "total_protein": total_protein,
-            "total_carbs": total_carbs,
-            "total_fat": total_fat,
+            "total_calories": round(total_calories, 1),
+            "total_protein": round(total_protein, 1),
+            "total_carbs": round(total_carbs, 1),
+            "total_fat": round(total_fat, 1),
             "total_meals": len(meals),
             "avg_calories": round(avg_calories, 1),
+            "days_with_data": days_count,
             "daily_data": daily_data,
-            "recommendations": recommendations
+            "recommendations": recommendations,
+            "date_range": {
+                "start": start_date.isoformat(),
+                "end": end_date.isoformat()
+            }
         }
         
+        print(f"✅ Analysis complete: {days_count} days, {len(meals)} meals")
         return jsonify(analysis), 200
         
     except Exception as e:
+        print(f"❌ Analysis error: {str(e)}")
         return jsonify({"error": "Failed to get analysis", "details": str(e)}), 500
 
 # [KEEPING ALL YOUR PROFILE ROUTES]
