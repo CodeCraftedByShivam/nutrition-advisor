@@ -17,9 +17,25 @@ import requests
 from requests_oauthlib import OAuth1
 
 # Import LSTM Forecaster
-from lstm_forecaster import NutritionLSTMForecaster
+# Safe import of ML models with error handling
+LSTM_AVAILABLE = False
+CLUSTERING_AVAILABLE = False
 
-from clustering_model import DietaryClusteringModel
+try:
+    from lstm_forecaster import NutritionLSTMForecaster
+    LSTM_AVAILABLE = True
+    print("✅ LSTM model loaded")
+except Exception as e:
+    print(f"⚠️ LSTM disabled: {e}")
+    LSTM_AVAILABLE = False
+
+try:
+    from clustering_model import DietaryClusteringModel
+    CLUSTERING_AVAILABLE = True
+    print("✅ Clustering model loaded")
+except Exception as e:
+    print(f"⚠️ Clustering disabled: {e}")
+    CLUSTERING_AVAILABLE = False
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "your_super_secret_key")
@@ -924,6 +940,18 @@ def forecast_calorie_intake(current_user):
     Query Parameters:
         days (optional): Number of days to forecast (default: 7, max: 14)
     """
+        # Check if LSTM is available
+    if not LSTM_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'LSTM forecasting temporarily unavailable',
+            'message': 'This feature requires TensorFlow which is not installed on this server.',
+            'alternatives': [
+                'Use Diet Classification for eating pattern analysis',
+                'Use Clustering to find your dietary tribe'
+            ]
+        }), 503
+
     print(f"🔮 LSTM Forecast requested by user: {current_user.get('email')}")
     
     if db is None:
@@ -982,6 +1010,14 @@ def cluster_dietary_habits(current_user):
     
     Analyzes user's eating patterns and groups them into clusters
     """
+       # Check if clustering is available
+    if not CLUSTERING_AVAILABLE:
+        return jsonify({
+            'success': False,
+            'error': 'Clustering feature temporarily unavailable',
+            'message': 'Unable to load clustering model. Please try again later.'
+        }), 503
+    
     print(f"🔬 Clustering Analysis requested by user: {current_user.get('email')}")
     
     if db is None:
