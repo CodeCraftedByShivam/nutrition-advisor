@@ -180,30 +180,40 @@
       </section>
 
       <!-- MODEL 3: Nutrient Gap Analyzer (Coming Soon) -->
-      <div class="ai-model-card coming-soon">
-        <div class="ai-model-header">
-          <div class="ai-model-icon">📊</div>
-          <h3>Nutrient Gap Analyzer</h3>
-          <span class="ai-model-badge coming-soon-badge">Coming Soon</span>
-        </div>
+<!-- MODEL 3: Clustering Analysis -->
+<div class="ai-model-card">
+  <div class="ai-model-header">
+    <div class="ai-model-icon">🔬</div>
+    <div>
+      <h3>Dietary Habit Clustering</h3>
+      <span class="ai-model-badge">Active • Unsupervised ML</span>
+    </div>
+  </div>
 
-        <p class="ai-model-description">
-          Deep learning model identifies vitamin and mineral deficiencies in your diet. Provides actionable insights
-          to optimize nutrition.
-        </p>
+  <p class="ai-model-description">
+    K-Means clustering algorithm groups you with similar eaters based on your dietary patterns. 
+    Discover your eating tribe and get personalized insights!
+  </p>
 
-        <ul class="ai-model-features">
-          <li><i class="fas fa-clock"></i> 30+ micronutrient tracking</li>
-          <li><i class="fas fa-clock"></i> Deficiency alerts</li>
-          <li><i class="fas fa-clock"></i> Food source suggestions</li>
-          <li><i class="fas fa-clock"></i> Weekly reports</li>
-        </ul>
+  <ul class="ai-model-features">
+    <li><i class="fas fa-check-circle"></i> Pattern-based grouping</li>
+    <li><i class="fas fa-check-circle"></i> 5 distinct dietary clusters</li>
+    <li><i class="fas fa-check-circle"></i> Personalized insights</li>
+    <li><i class="fas fa-check-circle"></i> Similar user discovery</li>
+  </ul>
 
-        <div class="coming-soon-label">
-          <h4>🚧 Under Development</h4>
-          <p>Expected Launch: Q3 2025</p>
-        </div>
-      </div>
+  <div class="ai-model-actions">
+    <button id="clusterAnalyzeBtn" class="ai-analyze-btn">
+      <i class="fas fa-users"></i> Find My Eating Tribe
+    </button>
+    <button id="clusterRefreshBtn" class="ai-refresh-btn" style="display: none;">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Cluster Results Container -->
+<div id="clusterResults" style="display: none;"></div>
 
       <!-- MODEL 4: Calorie Burn Predictor (Coming Soon) -->
       <div class="ai-model-card coming-soon">

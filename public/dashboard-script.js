@@ -1171,3 +1171,186 @@ function displayLSTMForecast(data) {
         resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
 }
+
+
+// ==================== CLUSTERING ANALYSIS ====================
+// ==================== CLUSTERING ANALYSIS ====================
+
+// Initialize clustering when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  initializeClusteringButtons();
+});
+
+function initializeClusteringButtons() {
+  const analyzeBtn = document.getElementById('clusterAnalyzeBtn');
+  const refreshBtn = document.getElementById('clusterRefreshBtn');
+  
+  if (analyzeBtn) {
+    analyzeBtn.addEventListener('click', runClusterAnalysis);
+    console.log('✅ Cluster analyze button initialized');
+  }
+  
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', runClusterAnalysis);
+    console.log('✅ Cluster refresh button initialized');
+  }
+}
+
+async function runClusterAnalysis() {
+  console.log('🔬 Clustering analysis started');
+  
+  const analyzeBtn = document.getElementById('clusterAnalyzeBtn');
+  const refreshBtn = document.getElementById('clusterRefreshBtn');
+  const resultsDiv = document.getElementById('clusterResults');
+
+  if (!analyzeBtn) {
+    console.error('❌ Cluster analyze button not found');
+    return;
+  }
+
+  // Show loading state
+  const originalHTML = analyzeBtn.innerHTML;
+  analyzeBtn.disabled = true;
+  analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+
+  try {
+    console.log('📡 Making API call to /ai/cluster-analysis');
+    const response = await makeApiCall('/ai/cluster-analysis', 'GET');
+    console.log('📊 Cluster API response:', response);
+
+    if (response.success) {
+      console.log('✅ Clustering successful:', response.cluster_profile.name);
+      
+      // Hide analyze button, show refresh button
+      analyzeBtn.style.display = 'none';
+      if (refreshBtn) {
+        refreshBtn.style.display = 'flex';
+      }
+
+      // Display results
+      displayClusterResults(response);
+      
+      if (resultsDiv) {
+        resultsDiv.style.display = 'block';
+        
+        // Smooth scroll to results
+        setTimeout(() => {
+          resultsDiv.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+        }, 200);
+      }
+    } else {
+      console.error('❌ Clustering failed:', response);
+      
+      // Show error message
+      const errorMsg = response.message || response.error || 'Failed to perform clustering analysis';
+      alert(errorMsg);
+      
+      // If insufficient data, show helpful message
+      if (response.current_meals !== undefined) {
+        alert(`You have ${response.current_meals} meals logged. You need at least ${response.required_meals} meals for clustering analysis.\n\n${response.suggestion || 'Keep logging meals!'}`);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Clustering error:', error);
+    alert('Failed to perform clustering analysis. Please check:\n1. Backend server is running\n2. You are logged in\n3. You have logged at least 5 meals\n\nError: ' + error.message);
+  } finally {
+    analyzeBtn.disabled = false;
+    analyzeBtn.innerHTML = originalHTML;
+  }
+}
+
+function displayClusterResults(data) {
+  console.log('🎨 Displaying cluster results');
+  
+  const resultsDiv = document.getElementById('clusterResults');
+  if (!resultsDiv) {
+    console.error('❌ clusterResults div not found');
+    return;
+  }
+
+  const profile = data.cluster_profile;
+  const features = data.features_analyzed;
+
+  const html = `
+    <div class="cluster-result-card">
+      <!-- Header -->
+      <div class="cluster-header" style="background: linear-gradient(135deg, ${profile.color}15, ${profile.color}05);">
+        <span class="algorithm-badge">🔬 ${data.algorithm}</span>
+        <div class="cluster-icon-large">${profile.icon}</div>
+        <h3 style="color: ${profile.color};">${profile.name}</h3>
+        <p class="cluster-description">${profile.description}</p>
+        <div class="similar-users-badge">
+          <i class="fas fa-users"></i> ${data.similar_users.toLocaleString()} users in this group
+        </div>
+      </div>
+
+      <!-- Features Grid -->
+      <div class="cluster-features-section">
+        <h4>📊 Your Dietary Pattern Analysis</h4>
+        <div class="cluster-features-grid">
+          <div class="cluster-feature-box">
+            <h5>Avg Calories</h5>
+            <div class="value">${Math.round(features.avg_calories)}</div>
+            <span class="label">kcal/day</span>
+          </div>
+          <div class="cluster-feature-box">
+            <h5>Protein</h5>
+            <div class="value">${features.protein_ratio}%</div>
+            <span class="label">of calories</span>
+          </div>
+          <div class="cluster-feature-box">
+            <h5>Carbs</h5>
+            <div class="value">${features.carbs_ratio}%</div>
+            <span class="label">of calories</span>
+          </div>
+          <div class="cluster-feature-box">
+            <h5>Fat</h5>
+            <div class="value">${features.fat_ratio}%</div>
+            <span class="label">of calories</span>
+          </div>
+          <div class="cluster-feature-box">
+            <h5>Meal Frequency</h5>
+            <div class="value">${features.meal_frequency.toFixed(1)}</div>
+            <span class="label">meals/day</span>
+          </div>
+          <div class="cluster-feature-box">
+            <h5>Consistency</h5>
+            <div class="value">${Math.round(features.calorie_consistency)}</div>
+            <span class="label">std deviation</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Insights -->
+      <div class="cluster-insights-section">
+        <h4>💡 Personalized Insights for Your Group</h4>
+        <div class="cluster-insights-list">
+          ${data.insights.map(insight => `
+            <div class="cluster-insight-item">
+              <div class="insight-icon">${insight.icon}</div>
+              <div class="insight-content">
+                <h5>${insight.title}</h5>
+                <p>${insight.message}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Metadata -->
+      <div class="cluster-metadata">
+        <span><i class="fas fa-utensils"></i> ${data.meals_analyzed} meals analyzed</span>
+        <span><i class="fas fa-clock"></i> ${new Date(data.timestamp).toLocaleString()}</span>
+      </div>
+    </div>
+  `;
+
+  resultsDiv.innerHTML = html;
+  console.log('✅ Cluster results displayed successfully');
+}
+
+// Log that clustering module is loaded
+console.log('✅ Clustering analysis module loaded and ready');

@@ -19,6 +19,7 @@ from requests_oauthlib import OAuth1
 # Import LSTM Forecaster
 from lstm_forecaster import NutritionLSTMForecaster
 
+from clustering_model import DietaryClusteringModel
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "your_super_secret_key")
@@ -970,9 +971,74 @@ def forecast_calorie_intake(current_user):
             'message': str(e)
         }), 500
 
+
+
+# Add this route after LSTM endpoint
+@app.route("/ai/cluster-analysis", methods=["GET"])
+@token_required
+def cluster_dietary_habits(current_user):
+    """
+    K-Means Clustering for Dietary Habit Grouping
+    
+    Analyzes user's eating patterns and groups them into clusters
+    """
+    print(f"🔬 Clustering Analysis requested by user: {current_user.get('email')}")
+    
+    if db is None:
+        return jsonify({"error": "Database not available"}), 500
+        
+    try:
+        meals_collection = db["meals"]
+        
+        # Fetch user's recent meals (last 30 days)
+        from datetime import timedelta
+        end_date = datetime.now(timezone.utc)
+        start_date = end_date - timedelta(days=30)
+        
+        meals = list(meals_collection.find({
+            "user_id": str(current_user["_id"]),
+            "created_at": {"$gte": start_date, "$lte": end_date}
+        }).sort("created_at", -1))
+        
+        print(f"📊 Found {len(meals)} meals for clustering analysis")
+        
+        # Check minimum data requirement
+        if len(meals) < 5:
+            return jsonify({
+                'success': False,
+                'error': 'Insufficient data for clustering',
+                'message': f'You need at least 5 meals logged. Currently you have {len(meals)} meals.',
+                'current_meals': len(meals),
+                'required_meals': 5,
+                'suggestion': 'Keep logging your meals to unlock clustering insights!'
+            }), 400
+        
+        # Initialize clustering model
+        clustering_model = DietaryClusteringModel(n_clusters=5)
+        
+        # Perform clustering analysis
+        result = clustering_model.predict_cluster(meals)
+        
+        if not result['success']:
+            return jsonify(result), 400
+        
+        print(f"✅ Clustering complete: User belongs to cluster '{result['cluster_profile']['name']}'")
+        return jsonify(result), 200
+        
+    except Exception as e:
+        print(f"❌ Clustering error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': 'Clustering analysis failed',
+            'message': str(e)
+        }), 500
+
 # Run the app
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print(f"🚀 Starting server on port {port}")
     print(f"🤖 AI Features: Diet Classification ✅ | LSTM Forecasting ✅")
     app.run(host="0.0.0.0", port=port, debug=False)
+
