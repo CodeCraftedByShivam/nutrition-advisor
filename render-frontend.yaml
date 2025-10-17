@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: nutrition-advisor-frontend
+    env: static
+    buildCommand: echo "No build needed"
+    startCommand: python3 -m http.server $PORT --directory public
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
