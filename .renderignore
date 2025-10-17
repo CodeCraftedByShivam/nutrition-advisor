@@ -1,0 +1,8 @@
+cd C:\Users\Shivam\Downloads\AIML\nutrition-advisor
+New-Item -Path ".renderignore" -ItemType File -Force
+Set-Content -Path ".renderignore" -Value @"
+api/
+requirements.txt
+runtime.txt
+render.yaml
+"@
