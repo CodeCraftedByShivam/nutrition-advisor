@@ -59,6 +59,8 @@ try:
         client = MongoClient(MONGO_URI, tls=True, tlsCAFile=certifi.where())
         db = client["nutrition_advisor_db"]
         users_collection = db["users"]
+        meals_collection = db["meals"]  # ← ADD THIS LINE!
+
         print("✅ MongoDB connected successfully")
     else:
         client = None
