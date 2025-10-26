@@ -403,7 +403,7 @@ def add_meal(current_user):
             "carbs": data.get("carbs", 0),
             "fat": data.get("fat", 0),
             "food_id": data.get("food_id", ""),
-            "date": datetime.now(timezone.utc).isoformat(),
+            "date": datetime.now(timezone.utc).strftime('%Y-%m-%d'),
             "created_at": datetime.now(timezone.utc)
         }
         
@@ -490,22 +490,17 @@ def get_meal_stats(user_id):
         print(f"📊 Getting stats for user: {actual_user_id}")
         
         # Get today's date (start and end of day in UTC)
-        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        today_end = datetime.utcnow().replace(hour=23, minute=59, second=59, microsecond=999999)
+        today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
         
-        print(f"📅 Looking for meals between: {today_start} and {today_end}")
+print(f"📅 Looking for meals with date: {today}")
         
-        # Query meals using date range (handles both string dates and datetime objects)
+        # Query meals for today (simple string match!)
         meals = list(meals_collection.find({
             "user_id": actual_user_id,
-            "$or": [
-                {"date": {"$gte": today_start.isoformat().split('T')[0], "$lte": today_end.isoformat().split('T')[0]}},  # String dates
-                {"date": {"$gte": today_start, "$lte": today_end}},  # DateTime objects
-                {"timestamp": {"$gte": today_start, "$lte": today_end}}  # If using timestamp field
-            ]
+            "date": today  # ← Simple exact match!
         }))
         
-        print(f"📊 Found {len(meals)} meals")
+        print(f"📊 Found {len(meals)} meals for today")
         
         # Calculate totals
         total_calories = sum(m.get('calories', 0) for m in meals)
@@ -521,10 +516,11 @@ def get_meal_stats(user_id):
         goal_progress = (total_calories / goal_calories * 100) if goal_calories > 0 else 0
         
         # Calculate streak (simplified for now)
-        try:
-            streak = calculate_streak_simple(actual_user_id)
-        except Exception as e:
-            print(f"⚠️ Streak error: {e}")
+try:
+            all_meals = list(meals_collection.find({"user_id": actual_user_id}, {"date": 1}).sort("date", -1).limit(30))
+            unique_dates = list(set(m.get('date') for m in all_meals if m.get('date')))
+            streak = min(len(unique_dates), 30)  # Max 30 for now
+        except:
             streak = 1
         
         stats = {
@@ -534,13 +530,13 @@ def get_meal_stats(user_id):
             "total_fat": round(total_fat, 1),
             "meals_count": len(meals),
             "goal_progress": round(goal_progress, 1),
-            "streak": streak
+            "streak": max(1, streak) if len(all_meals) > 0 else 0
         }
         
         print(f"✅ Stats calculated: {stats}")
         
         return jsonify(stats), 200
-        
+                
     except Exception as e:
         print(f"❌ Error getting meal stats: {e}")
         import traceback
