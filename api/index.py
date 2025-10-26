@@ -492,12 +492,12 @@ def get_meal_stats(user_id):
         # Get today's date (start and end of day in UTC)
         today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
         
-print(f"📅 Looking for meals with date: {today}")
+        print(f"📅 Looking for meals with date: {today}")  # ← FIXED INDENTATION!
         
         # Query meals for today (simple string match!)
         meals = list(meals_collection.find({
             "user_id": actual_user_id,
-            "date": today  # ← Simple exact match!
+            "date": today
         }))
         
         print(f"📊 Found {len(meals)} meals for today")
@@ -515,12 +515,16 @@ print(f"📅 Looking for meals with date: {today}")
         
         goal_progress = (total_calories / goal_calories * 100) if goal_calories > 0 else 0
         
-        # Calculate streak (simplified for now)
-try:
-            all_meals = list(meals_collection.find({"user_id": actual_user_id}, {"date": 1}).sort("date", -1).limit(30))
+        # Calculate streak
+        try:  # ← NESTED TRY (correct indentation)
+            all_meals = list(meals_collection.find(
+                {"user_id": actual_user_id}, 
+                {"date": 1}
+            ).sort("date", -1).limit(30))
             unique_dates = list(set(m.get('date') for m in all_meals if m.get('date')))
-            streak = min(len(unique_dates), 30)  # Max 30 for now
-        except:
+            streak = len(unique_dates) if len(unique_dates) > 0 else 0
+        except Exception as streak_err:  # ← NESTED EXCEPT
+            print(f"⚠️ Streak error: {streak_err}")
             streak = 1
         
         stats = {
@@ -530,14 +534,14 @@ try:
             "total_fat": round(total_fat, 1),
             "meals_count": len(meals),
             "goal_progress": round(goal_progress, 1),
-            "streak": max(1, streak) if len(all_meals) > 0 else 0
+            "streak": max(1, streak)
         }
         
         print(f"✅ Stats calculated: {stats}")
         
         return jsonify(stats), 200
-                
-    except Exception as e:
+        
+    except Exception as e:  # ← OUTER EXCEPT
         print(f"❌ Error getting meal stats: {e}")
         import traceback
         traceback.print_exc()
