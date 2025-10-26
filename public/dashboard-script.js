@@ -665,22 +665,39 @@ async function loadMealStatsWithGoals() {
 
     if (statsResult.response && statsResult.response.ok) {
       const stats = statsResult.result;
-      let goalProgress = stats.goal_progress;
-
-      if (profileResult.response && profileResult.response.ok) {
-        const profile = profileResult.result;
-        if (profile.dailyCalories) {
-          goalProgress = Math.min(Math.round((stats.total_calories / profile.dailyCalories) * 100), 100);
+      
+      console.log('📊 Stats received:', stats);
+      
+      // ✅ UPDATE WITH CORRECT IDs FROM YOUR HTML:
+      const caloriesEl = document.getElementById('caloriesCount');
+      const mealsEl = document.getElementById('mealsCount');
+      const streakEl = document.getElementById('streakCount');
+      const goalEl = document.getElementById('goalProgress'); // Check if this exists too
+      
+      if (caloriesEl) caloriesEl.textContent = Math.round(stats.total_calories || 0);
+      if (mealsEl) mealsEl.textContent = stats.meals_count || 0;
+      if (streakEl) streakEl.textContent = stats.streak || 1;
+      
+      // Goal progress (if element exists)
+      if (goalEl) {
+        let goalProgress = stats.goal_progress || 0;
+        
+        // If profile loaded, calculate goal progress
+        if (profileResult.response && profileResult.response.ok) {
+          const profile = profileResult.result;
+          const goalCalories = profile.daily_goal?.calories || 2000;
+          goalProgress = (stats.total_calories / goalCalories * 100);
         }
+        
+        goalEl.textContent = Math.round(goalProgress) + '%';
       }
-
-      document.getElementById('caloriesCount').textContent = stats.total_calories;
-      document.getElementById('mealsCount').textContent = stats.meals_count;
-      document.getElementById('goalProgress').textContent = goalProgress + '%';
-      document.getElementById('streakCount').textContent = stats.streak;
+      
+      console.log('✅ Dashboard updated successfully!');
+    } else {
+      console.error('❌ Failed to load stats');
     }
   } catch (error) {
-    console.error('Error loading stats:', error);
+    console.error('❌ Error loading dashboard:', error);
   }
 }
 
