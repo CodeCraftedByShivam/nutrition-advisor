@@ -66,11 +66,15 @@ try:
         client = None
         db = None
         users_collection = None
+        meals_collection = None  # ← ADD THIS TOO!
+
         print("❌ MongoDB URI not found")
 except Exception as e:
     client = None
     db = None
     users_collection = None
+    meals_collection = None  # ← ADD THIS TOO!
+
     print(f"❌ MongoDB connection error: {e}")
 
 
