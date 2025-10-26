@@ -474,7 +474,7 @@ def delete_meal(current_user, meal_id):
     except Exception as e:
         return jsonify({"error": "Failed to delete meal", "details": str(e)}), 400
 
-@@app.route('/meals/stats', methods=['GET'])
+@app.route('/meals/stats', methods=['GET'])
 @token_required
 def get_meal_stats(user_id):
     """Get daily meal statistics and streak"""
