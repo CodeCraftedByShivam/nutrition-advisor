@@ -463,47 +463,64 @@ def delete_meal(current_user, meal_id):
     except Exception as e:
         return jsonify({"error": "Failed to delete meal", "details": str(e)}), 400
 
-@app.route("/meals/stats", methods=["GET"])
+@app.route('/meals/stats', methods=['GET'])
 @token_required
-def get_meal_stats(current_user):
-    if db is None:
-        return jsonify({"error": "Database not available"}), 500
-        
+def get_meal_stats(user_id):
+    """Get daily meal statistics and streak"""
     try:
-        meals_collection = db["meals"]
-        today = datetime.now(timezone.utc).date()
-        start_date = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
-        end_date = datetime.combine(today, datetime.max.time()).replace(tzinfo=timezone.utc)
+        from datetime import datetime
         
-        today_meals = list(meals_collection.find({
-            "user_id": str(current_user["_id"]),
-            "created_at": {"$gte": start_date, "$lte": end_date}
-        }))
+        # Get today's date
+        today = datetime.now().strftime('%Y-%m-%d')
         
-        total_calories = sum(meal.get("calories", 0) for meal in today_meals)
-        total_protein = sum(meal.get("protein", 0) for meal in today_meals)
-        total_carbs = sum(meal.get("carbs", 0) for meal in today_meals)
-        total_fat = sum(meal.get("fat", 0) for meal in today_meals)
-        meals_count = len(today_meals)
+        print(f"📊 Getting stats for user: {user_id}, date: {today}")
         
-        goal_calories = 2000
-        goal_progress = min(round((total_calories / goal_calories) * 100), 100) if goal_calories > 0 else 0
+        # Get all meals for today
+        meals = list(meals_collection.find({"user_id": user_id, "date": today}))
         
-stats = {
-    "total_calories": total_calories,
-    "total_protein": total_protein,
-    "total_carbs": total_carbs,
-    "total_fat": total_fat,
-    "meals_count": meals_count,
-    "goal_progress": goal_progress,
-    "streak": calculate_streak(user_id)  # ← CALCULATE ACTUAL STREAK
-}
+        # Calculate totals
+        total_calories = 0
+        total_protein = 0
+        total_carbs = 0
+        total_fat = 0
+        meals_count = len(meals)
+        
+        for meal in meals:
+            total_calories += meal.get('calories', 0)
+            total_protein += meal.get('protein', 0)
+            total_carbs += meal.get('carbs', 0)
+            total_fat += meal.get('fat', 0)
+        
+        # Get user's daily goal
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        goal = user.get('daily_goal', {}) if user else {}
+        goal_calories = goal.get('calories', 2000)
+        
+        # Calculate goal progress
+        goal_progress = (total_calories / goal_calories * 100) if goal_calories > 0 else 0
+        
+        # Calculate streak
+        streak = calculate_streak(user_id)
+        
+        stats = {
+            "total_calories": round(total_calories, 1),
+            "total_protein": round(total_protein, 1),
+            "total_carbs": round(total_carbs, 1),
+            "total_fat": round(total_fat, 1),
+            "meals_count": meals_count,
+            "goal_progress": round(goal_progress, 1),
+            "streak": streak
+        }
+        
+        print(f"✅ Stats calculated: {stats}")
         
         return jsonify(stats), 200
         
     except Exception as e:
-        return jsonify({"error": "Failed to fetch stats", "details": str(e)}), 500
-
+        print(f"❌ Error getting meal stats: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Failed to get meal stats"}), 500
 # [KEEPING ALL YOUR FOOD API ROUTES]
 
 @app.route("/food/search", methods=["GET"])
