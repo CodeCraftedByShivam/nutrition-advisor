@@ -474,12 +474,12 @@ def delete_meal(current_user, meal_id):
     except Exception as e:
         return jsonify({"error": "Failed to delete meal", "details": str(e)}), 400
 
-@app.route('/meals/stats', methods=['GET'])
+@@app.route('/meals/stats', methods=['GET'])
 @token_required
 def get_meal_stats(user_id):
     """Get daily meal statistics and streak"""
     try:
-        from datetime import datetime
+        from datetime import datetime, timedelta
         
         # Handle if user_id is a dict
         if isinstance(user_id, dict):
@@ -489,12 +489,12 @@ def get_meal_stats(user_id):
         
         print(f"📊 Getting stats for user: {actual_user_id}")
         
-        # Get today's date (start and end of day in UTC)
+        # Get today's date as string (YYYY-MM-DD)
         today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
         
-        print(f"📅 Looking for meals with date: {today}")  # ← FIXED INDENTATION!
+        print(f"📅 Looking for meals with date: {today}")
         
-        # Query meals for today (simple string match!)
+        # Query meals for today
         meals = list(meals_collection.find({
             "user_id": actual_user_id,
             "date": today
@@ -515,16 +515,58 @@ def get_meal_stats(user_id):
         
         goal_progress = (total_calories / goal_calories * 100) if goal_calories > 0 else 0
         
-        # Calculate streak
-        try:  # ← NESTED TRY (correct indentation)
+        # ✅ CALCULATE TRUE CONSECUTIVE STREAK
+        try:
+            # Get all meals sorted by date (newest first)
             all_meals = list(meals_collection.find(
                 {"user_id": actual_user_id}, 
                 {"date": 1}
-            ).sort("date", -1).limit(30))
-            unique_dates = list(set(m.get('date') for m in all_meals if m.get('date')))
-            streak = len(unique_dates) if len(unique_dates) > 0 else 0
-        except Exception as streak_err:  # ← NESTED EXCEPT
-            print(f"⚠️ Streak error: {streak_err}")
+            ).sort("date", -1))
+            
+            if not all_meals:
+                streak = 0
+            else:
+                # Get unique dates and sort (newest first)
+                unique_dates = sorted(
+                    list(set(m.get('date') for m in all_meals if m.get('date'))),
+                    reverse=True
+                )
+                
+                print(f"🗓️ Found meals on {len(unique_dates)} unique dates")
+                
+                # Calculate consecutive days from today backwards
+                streak = 0
+                today_date = datetime.now(timezone.utc).date()
+                expected_date = today_date
+                
+                for date_str in unique_dates:
+                    try:
+                        meal_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                        
+                        # Check if this date matches expected consecutive date
+                        if meal_date == expected_date:
+                            streak += 1
+                            expected_date -= timedelta(days=1)
+                            print(f"  ✓ Day {streak}: {meal_date}")
+                        # Special case: if no meals today yet, start from yesterday
+                        elif streak == 0 and meal_date == today_date - timedelta(days=1):
+                            streak = 1
+                            expected_date = meal_date - timedelta(days=1)
+                            print(f"  ✓ Day {streak}: {meal_date} (starting from yesterday)")
+                        else:
+                            # Streak broken - found gap in dates
+                            print(f"  ✗ Streak broken at {meal_date} (expected {expected_date})")
+                            break
+                    except ValueError as date_err:
+                        print(f"⚠️ Invalid date format: {date_str}")
+                        continue
+                
+                print(f"🔥 Final streak: {streak} consecutive days")
+                
+        except Exception as streak_err:
+            print(f"⚠️ Streak calculation error: {streak_err}")
+            import traceback
+            traceback.print_exc()
             streak = 1
         
         stats = {
@@ -534,19 +576,18 @@ def get_meal_stats(user_id):
             "total_fat": round(total_fat, 1),
             "meals_count": len(meals),
             "goal_progress": round(goal_progress, 1),
-            "streak": max(1, streak)
+            "streak": max(1, streak) if streak > 0 else 0
         }
         
         print(f"✅ Stats calculated: {stats}")
         
         return jsonify(stats), 200
         
-    except Exception as e:  # ← OUTER EXCEPT
+    except Exception as e:
         print(f"❌ Error getting meal stats: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-
 
 # Simplified streak function (no date parsing errors)
 def calculate_streak_simple(user_id):
