@@ -88,16 +88,22 @@ def calculate_streak(user_id):
     try:
         from datetime import datetime, timedelta
         
+        # Handle if user_id is a dict (extract the actual ID)
+        if isinstance(user_id, dict):
+            actual_user_id = str(user_id.get('_id', user_id.get('user_id', '')))
+        else:
+            actual_user_id = str(user_id)
+        
         # Get all meals for user, sorted by date (newest first)
         meals = list(meals_collection.find(
-            {"user_id": user_id},
+            {"user_id": actual_user_id},  # ← Use cleaned ID
             {"date": 1}
         ).sort("date", -1))
         
         if not meals:
             return 0
         
-        # Get unique dates (convert to date objects)
+        # Get unique dates
         unique_dates = []
         for meal in meals:
             meal_date = datetime.strptime(meal['date'], '%Y-%m-%d').date()
@@ -112,23 +118,22 @@ def calculate_streak(user_id):
         expected_date = today
         
         for date in unique_dates:
-            # Check if this date is the expected consecutive date
             if date == expected_date:
                 streak += 1
                 expected_date -= timedelta(days=1)
-            # Allow 1 day gap (e.g., if today's meals not logged yet)
             elif date == expected_date - timedelta(days=1) and streak == 0:
                 streak = 1
                 expected_date = date - timedelta(days=1)
             else:
-                break  # Streak broken
+                break
         
-        return streak if streak > 0 else 1  # Minimum 1 if any meals exist
+        return streak if streak > 0 else 1
         
     except Exception as e:
         print(f"❌ Streak calculation error: {e}")
-        return 1  # Default to 1 on error
-
+        import traceback
+        traceback.print_exc()
+        return 1
 
 # Error handlers
 @app.errorhandler(500)
@@ -476,44 +481,45 @@ def get_meal_stats(user_id):
     try:
         from datetime import datetime
         
+        # Handle if user_id is a dict
+        if isinstance(user_id, dict):
+            actual_user_id = str(user_id.get('_id', user_id.get('user_id', '')))
+        else:
+            actual_user_id = str(user_id)
+        
+        print(f"📊 Getting stats for user: {actual_user_id}")
+        
         # Get today's date
         today = datetime.now().strftime('%Y-%m-%d')
         
-        print(f"📊 Getting stats for user: {user_id}, date: {today}")
-        
-        # Get all meals for today
-        meals = list(meals_collection.find({"user_id": user_id, "date": today}))
+        # Get today's meals
+        meals = list(meals_collection.find({
+            "user_id": actual_user_id, 
+            "date": today
+        }))
         
         # Calculate totals
-        total_calories = 0
-        total_protein = 0
-        total_carbs = 0
-        total_fat = 0
-        meals_count = len(meals)
+        total_calories = sum(m.get('calories', 0) for m in meals)
+        total_protein = sum(m.get('protein', 0) for m in meals)
+        total_carbs = sum(m.get('carbs', 0) for m in meals)
+        total_fat = sum(m.get('fat', 0) for m in meals)
         
-        for meal in meals:
-            total_calories += meal.get('calories', 0)
-            total_protein += meal.get('protein', 0)
-            total_carbs += meal.get('carbs', 0)
-            total_fat += meal.get('fat', 0)
-        
-        # Get user's daily goal
-        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        # Get user's goal
+        user = users_collection.find_one({"_id": ObjectId(actual_user_id)})
         goal = user.get('daily_goal', {}) if user else {}
         goal_calories = goal.get('calories', 2000)
         
-        # Calculate goal progress
         goal_progress = (total_calories / goal_calories * 100) if goal_calories > 0 else 0
         
         # Calculate streak
-        streak = calculate_streak(user_id)
+        streak = calculate_streak(actual_user_id)
         
         stats = {
             "total_calories": round(total_calories, 1),
             "total_protein": round(total_protein, 1),
             "total_carbs": round(total_carbs, 1),
             "total_fat": round(total_fat, 1),
-            "meals_count": meals_count,
+            "meals_count": len(meals),
             "goal_progress": round(goal_progress, 1),
             "streak": streak
         }
@@ -526,8 +532,7 @@ def get_meal_stats(user_id):
         print(f"❌ Error getting meal stats: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": "Failed to get meal stats"}), 500
-# [KEEPING ALL YOUR FOOD API ROUTES]
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/food/search", methods=["GET"])
 @token_required
