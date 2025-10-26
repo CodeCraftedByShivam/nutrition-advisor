@@ -71,6 +71,59 @@ except Exception as e:
     users_collection = None
     print(f"❌ MongoDB connection error: {e}")
 
+
+# Add this function around line 50-60 (after imports, before routes)
+
+def calculate_streak(user_id):
+    """
+    Calculate consecutive days streak for a user
+    Returns: int (number of consecutive days with meal logs)
+    """
+    try:
+        from datetime import datetime, timedelta
+        
+        # Get all meals for user, sorted by date (newest first)
+        meals = list(meals_collection.find(
+            {"user_id": user_id},
+            {"date": 1}
+        ).sort("date", -1))
+        
+        if not meals:
+            return 0
+        
+        # Get unique dates (convert to date objects)
+        unique_dates = []
+        for meal in meals:
+            meal_date = datetime.strptime(meal['date'], '%Y-%m-%d').date()
+            if meal_date not in unique_dates:
+                unique_dates.append(meal_date)
+        
+        unique_dates.sort(reverse=True)  # Newest first
+        
+        # Calculate streak
+        streak = 0
+        today = datetime.now().date()
+        expected_date = today
+        
+        for date in unique_dates:
+            # Check if this date is the expected consecutive date
+            if date == expected_date:
+                streak += 1
+                expected_date -= timedelta(days=1)
+            # Allow 1 day gap (e.g., if today's meals not logged yet)
+            elif date == expected_date - timedelta(days=1) and streak == 0:
+                streak = 1
+                expected_date = date - timedelta(days=1)
+            else:
+                break  # Streak broken
+        
+        return streak if streak > 0 else 1  # Minimum 1 if any meals exist
+        
+    except Exception as e:
+        print(f"❌ Streak calculation error: {e}")
+        return 1  # Default to 1 on error
+
+
 # Error handlers
 @app.errorhandler(500)
 def internal_error(error):
@@ -436,15 +489,15 @@ def get_meal_stats(current_user):
         goal_calories = 2000
         goal_progress = min(round((total_calories / goal_calories) * 100), 100) if goal_calories > 0 else 0
         
-        stats = {
-            "total_calories": total_calories,
-            "total_protein": total_protein,
-            "total_carbs": total_carbs,
-            "total_fat": total_fat,
-            "meals_count": meals_count,
-            "goal_progress": goal_progress,
-            "streak": 1
-        }
+stats = {
+    "total_calories": total_calories,
+    "total_protein": total_protein,
+    "total_carbs": total_carbs,
+    "total_fat": total_fat,
+    "meals_count": meals_count,
+    "goal_progress": goal_progress,
+    "streak": calculate_streak(user_id)  # ← CALCULATE ACTUAL STREAK
+}
         
         return jsonify(stats), 200
         
